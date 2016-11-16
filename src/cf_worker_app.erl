@@ -3,22 +3,22 @@
 %% @end
 %%%-------------------------------------------------------------------
 
--module(cf_worker_app).
+-module( cf_worker_app ).
 
--behaviour(application).
+-behaviour( application ).
 
 %% Application callbacks
--export([start/2, stop/1]).
+-export( [start/2, stop/1] ).
 
 %%====================================================================
 %% API
 %%====================================================================
 
-start(_StartType, _StartArgs) ->
+start( _StartType, _StartArgs ) ->
     cf_worker_sup:start_link().
 
 %%--------------------------------------------------------------------
-stop(_State) ->
+stop( _State ) ->
     ok.
 
 %%====================================================================

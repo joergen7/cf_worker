@@ -1,5 +1,5 @@
 {application, cf_worker,
- [{description, "An OTP application"},
+ [{description, "A Cuneiform worker service"},
   {vsn, "0.1.0"},
   {registered, []},
   {mod, { cf_worker_app, []}},
@@ -8,7 +8,7 @@
     stdlib
    ]},
   {env,[]},
-  {modules, []},
+  {modules, [cf_worker_app, cf_worker_sup]},
 
   {maintainers, []},
   {licenses, []},
