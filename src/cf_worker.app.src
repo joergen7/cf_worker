@@ -1,16 +1,18 @@
 {application, cf_worker,
- [{description, "A Cuneiform worker service"},
+ [{description, "A Cuneiform worker implementation."},
   {vsn, "0.1.0"},
+  {mod, {cre, []}},
   {registered, []},
-  {mod, { cf_worker_app, []}},
   {applications,
    [kernel,
     stdlib
    ]},
   {env,[]},
-  {modules, [cf_worker_app, cf_worker_sup]},
+  {modules, [cf_worker]},
 
-  {maintainers, []},
-  {licenses, []},
-  {links, []}
+  {maintainers, ["Jorgen Brandt"]},
+  {licenses, ["Apache 2.0"]},
+  {links, [
+           {"GitHub", "https://github.com/joergen7/cf_worker/"}
+          ]}
  ]}.
