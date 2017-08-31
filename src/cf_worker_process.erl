@@ -28,7 +28,7 @@
 %% @end
 %% -------------------------------------------------------------------
 
--module( cf_worker_node ).
+-module( cf_worker_process ).
 -behaviour( cre_worker ).
 
 
@@ -39,6 +39,16 @@
 -export( [do_stagein/3, do_stageout/3, init/1, run/2, stagein_lst/1,
           stageout_lst/2] ).
 
+-export( [start_link/1] ).
+
+%%====================================================================
+%% API functions
+%%====================================================================
+
+start_link( CrePid )
+when is_pid( CrePid ) ->
+  cre_worker:start_link( CrePid, ?MODULE, [] ).
+
 
 %%====================================================================
 %% CRE worker callback functions
@@ -46,29 +56,41 @@
 
 -spec do_stagein( A :: _, F :: _, UsrInfo :: _ ) -> ok | {error, enoent}.
 
-do_stagein( _A, _F, _UsrInfo ) -> ok.
+do_stagein( _A, _F, _UsrInfo ) ->
+  io:format( "TODO: do_stagein~n" ),
+  ok.
 
 
 -spec do_stageout( A :: _, F :: _, UsrInfo :: _ ) -> ok | {error, enoent}.
 
-do_stageout( _A, _F, _UsrInfo ) -> ok.
+do_stageout( _A, _F, _UsrInfo ) ->
+  io:format( "TODO: do_stageout~n" ),
+  ok.
 
 
 -spec init( WrkArg :: _ ) -> UsrInfo :: _.
 
-init( _WrkArg ) -> [].
+init( _WrkArg ) ->
+  io:format( "TODO: init~n" ),
+  [].
 
 
 -spec run( A :: _, UsrInfo :: _ ) -> {ok, R :: _} | {error, Reason :: _}.
 
-run( A, _UsrInfo ) -> {ok, A}.
+run( A, _UsrInfo ) ->
+  io:format( "TODO: run~n" ),
+  {ok, A}.
 
 
 -spec stagein_lst( A :: _ ) -> [F :: _].
 
-stagein_lst( _A ) -> [].
+stagein_lst( _A ) ->
+  io:format( "TODO: stagein_lst~n" ),
+  [].
 
 
 -spec stageout_lst( A :: _, R :: _ ) -> [F :: _].
 
-stageout_lst( _A, _R ) -> [].
+stageout_lst( _A, _R ) ->
+  io:format( "TODO: stageout_lst~n" ),
+  [].

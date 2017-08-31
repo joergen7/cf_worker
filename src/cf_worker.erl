@@ -8,6 +8,7 @@
 
 -export( [start/2, stop/1] ).
 -export( [start/0] ).
+-export( [main/1] ).
 
 
 %%====================================================================
@@ -35,9 +36,28 @@ start( _StartType, _StartArgs ) ->
           end,
 
   % start supervisor
-  cf_worker_sup:start_link( cf_worker_sup, {CrePid, NSlot} ).
+  cf_worker_sup:start_link( CrePid, NSlot ).
 
 
 stop( _State ) ->
   ok.
+
+
+%%====================================================================
+%% Escript main functions
+%%====================================================================
+
+main( [CreNode] )
+when is_list( CreNode ) ->
+
+  % connect to node
+  pong = net_adm:ping( list_to_atom( CreNode ) ),
+
+  % start worker application
+  ok = start(),
+
+  % wait indefinitely
+  receive
+    _ -> ok
+  end.
 
