@@ -50,11 +50,15 @@ stop( _State ) ->
 main( [CreNode] )
 when is_list( CreNode ) ->
 
-  % connect to node
+  io:format( "application:     cf_worker~nnode name:       ~p~n", [node()] ),
+
+  % connect to CRE node
   pong = net_adm:ping( list_to_atom( CreNode ) ),
+  io:format( "connected nodes: ~p~n", [nodes()] ),
 
   % start worker application
   ok = start(),
+  io:format( "state:           ok~n" ),
 
   % wait indefinitely
   receive
