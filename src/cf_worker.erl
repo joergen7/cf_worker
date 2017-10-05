@@ -26,17 +26,28 @@ start() ->
 
 start( _StartType, _StartArgs ) ->
 
-  % find out CRE process id
-  {ok, CrePid} = cre:pid(),
+  % retrieve the CRE node name from the environment variables
+  case application:get_env( cf_worker, cre_node ) of
 
-  % find out number of cores in this computer
-  NSlot = case erlang:system_info( logical_processors_available ) of
-            unknown -> 1;
-            N       -> N
-          end,
+    undefined     ->
+      {error, {env_var_undefined, cre_node}};
 
-  % start supervisor
-  cf_worker_sup:start_link( CrePid, NSlot ).
+    {ok, CreNode} ->
+
+      % find out CRE process id
+      {ok, CrePid} = cre:pid( CreNode ),
+
+      % find out number of cores in this computer
+      NSlot =
+        case erlang:system_info( logical_processors_available ) of
+          unknown -> 1;
+          N       -> N
+        end,
+
+      % start supervisor
+      cf_worker_sup:start_link( CrePid, NSlot )
+
+  end.
 
 
 stop( _State ) ->
@@ -55,6 +66,9 @@ when is_list( CreNode ) ->
   % connect to CRE node
   pong = net_adm:ping( list_to_atom( CreNode ) ),
   io:format( "connected nodes: ~p~n", [nodes()] ),
+
+  % set the CRE node as the environment variable
+  application:set_env( cf_worker, cre_node, CreNode ),
 
   % start worker application
   ok = start(),
