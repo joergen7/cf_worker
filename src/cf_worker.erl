@@ -68,7 +68,7 @@ when is_list( CreNode ) ->
   io:format( "connected nodes: ~p~n", [nodes()] ),
 
   % set the CRE node as the environment variable
-  application:set_env( cf_worker, cre_node, CreNode ),
+  application:set_env( cf_worker, cre_node, list_to_atom( CreNode ) ),
 
   % start worker application
   ok = start(),
