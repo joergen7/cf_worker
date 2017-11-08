@@ -96,10 +96,10 @@ when is_list( CreNodeStr ) ->
       N       -> N
     end,
 
-  io:format( "available processors: ~p~n", [Nwrk] ),
+  io:format( "available processors: ~p~n", [NWrk] ),
 
   % start worker application
-  ok = setup_app( CreNode, Nwrk ),
+  ok = setup_app( CreNode, NWrk ),
 
   io:format( "connected nodes: ~p~n", [nodes()] ),
   io:format( "state:           ok~n" ),
