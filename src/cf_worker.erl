@@ -7,7 +7,7 @@
 %%====================================================================
 
 -export( [start/2, stop/1] ).
--export( [start/0] ).
+-export( [start/0, setup_app/2] ).
 -export( [main/1] ).
 
 
@@ -17,6 +17,24 @@
 
 
 start() ->
+
+  CreNode = node(),
+
+  NWrk =
+    case erlang:system_info( logical_processors_available ) of
+      unknown -> 1;
+      N       -> N
+    end,
+
+  setup_app( CreNode, NWrk ).
+
+
+setup_app( CreNode, NWrk )
+when is_atom( CreNode ),
+     is_integer( NWrk ), NWrk > 0 ->
+
+  application:set_env( cf_worker, cre_node, CreNode ),
+  application:set_env( cf_worker, n_wrk, NWrk ),
   application:start( cf_worker ).
 
 
@@ -26,27 +44,34 @@ start() ->
 
 start( _StartType, _StartArgs ) ->
 
-  % retrieve the CRE node name from the environment variables
-  case application:get_env( cf_worker, cre_node ) of
+  case application:get_env( cf_worker, n_wrk ) of
 
-    undefined     ->
-      {error, {env_var_undefined, cre_node}};
+    undefined  -> {error, {env_var_undefined, n_wrk}};
 
-    {ok, CreNode} ->
+    {ok, NWrk} ->
 
-      % find out CRE process id
-      {ok, CrePid} = cre:pid( CreNode ),
+      % retrieve the CRE node name from the environment variables
+      case application:get_env( cf_worker, cre_node ) of
 
-      % find out number of cores in this computer
-      NSlot =
-        case erlang:system_info( logical_processors_available ) of
-          unknown -> 1;
-          N       -> N
-        end,
+        undefined     ->
+          {error, {env_var_undefined, cre_node}};
 
-      % start supervisor
-      cf_worker_sup:start_link( CrePid, NSlot )
+        {ok, CreNode} ->
 
+          % establish connection
+          pong =
+            case CreNode of
+              'nonode@nohost' -> pong;
+              _               -> net_adm:ping( CreNode )
+            end,
+
+
+          % find out CRE process id
+          {ok, CrePid} = cre:pid( CreNode ),
+
+          % start supervisor
+          cf_worker_sup:start_link( CrePid, NWrk )
+      end
   end.
 
 
@@ -58,20 +83,25 @@ stop( _State ) ->
 %% Escript main functions
 %%====================================================================
 
-main( [CreNode] )
-when is_list( CreNode ) ->
+main( [CreNodeStr] )
+when is_list( CreNodeStr ) ->
+
+  CreNode = list_to_atom( CreNodeStr ),
 
   io:format( "application:     cf_worker~nnode name:       ~p~n", [node()] ),
 
-  % connect to CRE node
-  pong = net_adm:ping( list_to_atom( CreNode ) ),
-  io:format( "connected nodes: ~p~n", [nodes()] ),
+  NWrk =
+    case erlang:system_info( logical_processors_available ) of
+      unknown -> 1;
+      N       -> N
+    end,
 
-  % set the CRE node as the environment variable
-  application:set_env( cf_worker, cre_node, list_to_atom( CreNode ) ),
+  io:format( "available processors: ~p~n", [Nwrk] ),
 
   % start worker application
-  ok = start(),
+  ok = setup_app( CreNode, Nwrk ),
+
+  io:format( "connected nodes: ~p~n", [nodes()] ),
   io:format( "state:           ok~n" ),
 
   % wait indefinitely
