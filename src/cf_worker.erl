@@ -46,31 +46,18 @@ start( _StartType, _StartArgs ) ->
 
   case application:get_env( cf_worker, n_wrk ) of
 
-    undefined  -> {error, {env_var_undefined, n_wrk}};
+    undefined ->
+      {error, {env_var_undefined, n_wrk}};
 
     {ok, NWrk} ->
-
-      % retrieve the CRE node name from the environment variables
       case application:get_env( cf_worker, cre_node ) of
 
-        undefined     ->
+        undefined ->
           {error, {env_var_undefined, cre_node}};
 
         {ok, CreNode} ->
+          cf_worker_sup:start_link( CreNode, NWrk )
 
-          % establish connection
-          pong =
-            case CreNode of
-              'nonode@nohost' -> pong;
-              _               -> net_adm:ping( CreNode )
-            end,
-
-
-          % find out CRE process id
-          {ok, CrePid} = cre:pid( CreNode ),
-
-          % start supervisor
-          cf_worker_sup:start_link( CrePid, NWrk )
       end
   end.
 

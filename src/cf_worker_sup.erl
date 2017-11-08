@@ -14,23 +14,36 @@
 %% API functions
 %%====================================================================
 
-start_link( CrePid, NSlot )
-when is_pid( CrePid ),
+start_link( CreNode, NSlot )
+when is_atom( CreNode ),
      is_integer( NSlot ), NSlot > 0 ->
-  supervisor:start_link( ?MODULE, {CrePid, NSlot} ).
+  supervisor:start_link( ?MODULE, {CreNode, NSlot} ).
 
 %%====================================================================
 %% Supervisor callback functions
 %%====================================================================
 
-init( {CrePid, NSlot} )
-when is_pid( CrePid ),
+init( {CreNode, NSlot} )
+when is_atom( CreNode ),
      is_integer( NSlot ), NSlot > 0 ->
 
-  Id = fun( I ) ->
-  	     S = lists:flatten( io_lib:format( "wrk-~p", [I] ) ),
-         list_to_atom( S )
-       end,
+  F =
+    fun() ->    
+      {ok, CrePid} = cre:pid( CreNode ),
+      CrePid
+    end,
+
+  Id =
+    fun( I ) ->
+      S = lists:flatten( io_lib:format( "wrk-~p", [I] ) ),
+      list_to_atom( S )
+    end,
+
+  pong =
+    case CreNode of
+      'nonode@nohost' -> pong;
+      _               -> net_adm:ping( CreNode )
+    end,
 
   SupFlags = #{
                strategy  => one_for_one,
@@ -39,7 +52,7 @@ when is_pid( CrePid ),
               },
 
   WorkerNodeSpec = #{
-                     start    => {cf_worker_process, start_link, [CrePid]},
+                     start    => {cf_worker_process, start_link, [F]},
                      restart  => permanent,
                      shutdown => 5000,
                      type     => worker,

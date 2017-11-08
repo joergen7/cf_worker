@@ -45,9 +45,12 @@
 %% API functions
 %%====================================================================
 
-start_link( CrePid )
-when is_pid( CrePid ) ->
-  cre_worker:start_link( CrePid, ?MODULE, [] ).
+start_link( F ) when is_function( F, 0 ) ->
+  CreName = F(),
+  cre_worker:start_link( CreName, ?MODULE, [] );
+
+start_link( CreName ) ->
+  cre_worker:start_link( CreName, ?MODULE, [] ).
 
 
 %%====================================================================
