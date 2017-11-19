@@ -33,9 +33,9 @@ setup_app( CreNode, NWrk )
 when is_atom( CreNode ),
      is_integer( NWrk ), NWrk > 0 ->
 
-  application:set_env( cf_worker, cre_node, CreNode ),
-  application:set_env( cf_worker, n_wrk, NWrk ),
-  application:start( cf_worker ).
+  application:set_env( ?MODULE, cre_node, CreNode ),
+  application:set_env( ?MODULE, n_wrk, NWrk ),
+  application:start( ?MODULE ).
 
 
 %%====================================================================
@@ -44,13 +44,13 @@ when is_atom( CreNode ),
 
 start( _StartType, _StartArgs ) ->
 
-  case application:get_env( cf_worker, n_wrk ) of
+  case application:get_env( ?MODULE, n_wrk ) of
 
     undefined ->
       {error, {env_var_undefined, n_wrk}};
 
     {ok, NWrk} ->
-      case application:get_env( cf_worker, cre_node ) of
+      case application:get_env( ?MODULE, cre_node ) of
 
         undefined ->
           {error, {env_var_undefined, cre_node}};
