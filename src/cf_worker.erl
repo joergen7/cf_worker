@@ -7,7 +7,7 @@
 %%====================================================================
 
 -export( [start/2, stop/1] ).
--export( [start/0, setup_app/2] ).
+-export( [start/0, setup_env/2] ).
 -export( [main/1] ).
 
 
@@ -15,27 +15,16 @@
 %% API functions
 %%====================================================================
 
-
 start() ->
-
-  CreNode = node(),
-
-  NWrk =
-    case erlang:system_info( logical_processors_available ) of
-      unknown -> 1;
-      N       -> N
-    end,
-
-  setup_app( CreNode, NWrk ).
+  application:start( ?MODULE ).
 
 
-setup_app( CreNode, NWrk )
+setup_env( CreNode, NWrk )
 when is_atom( CreNode ),
      is_integer( NWrk ), NWrk > 0 ->
 
-  application:set_env( ?MODULE, cre_node, CreNode ),
-  application:set_env( ?MODULE, n_wrk, NWrk ),
-  application:start( ?MODULE ).
+  ok = application:set_env( ?MODULE, cre_node, CreNode ),
+  ok = application:set_env( ?MODULE, n_wrk, NWrk ).
 
 
 %%====================================================================
@@ -44,22 +33,32 @@ when is_atom( CreNode ),
 
 start( _StartType, _StartArgs ) ->
 
-  case application:get_env( ?MODULE, n_wrk ) of
+  NWrk =
+    case application:get_env( ?MODULE, n_wrk ) of
 
-    undefined ->
-      {error, {env_var_undefined, n_wrk}};
+      undefined ->
+        case erlang:system_info( logical_processors_available ) of
+          unknown -> 1;
+          N       -> N
+        end;
 
-    {ok, NWrk} ->
-      case application:get_env( ?MODULE, cre_node ) of
+      {ok, N} ->
+        N
 
-        undefined ->
-          {error, {env_var_undefined, cre_node}};
+    end,
 
-        {ok, CreNode} ->
-          cf_worker_sup:start_link( CreNode, NWrk )
+  CreNode =
+    case application:get_env( ?MODULE, cre_node ) of
 
-      end
-  end.
+      undefined ->
+        node();
+              
+      {ok, C} ->
+        C
+
+    end,
+
+  cf_worker_sup:start_link( CreNode, NWrk ).
 
 
 stop( _State ) ->
@@ -67,7 +66,7 @@ stop( _State ) ->
 
 
 %%====================================================================
-%% Escript main functions
+%% Escript main function
 %%====================================================================
 
 main( [CreNodeStr] )
@@ -86,7 +85,8 @@ when is_list( CreNodeStr ) ->
   io:format( "available processors: ~p~n", [NWrk] ),
 
   % start worker application
-  ok = setup_app( CreNode, NWrk ),
+  ok = setup_env( CreNode, NWrk ),
+  ok = start(),
 
   io:format( "connected nodes: ~p~n", [nodes()] ),
   io:format( "state:           ok~n" ),

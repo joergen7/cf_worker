@@ -29,8 +29,7 @@ when is_atom( CreNode ),
 
   F =
     fun() ->    
-      {ok, CrePid} = cre:pid( CreNode ),
-      CrePid
+      cre:pid( CreNode )
     end,
 
   Id =
@@ -59,7 +58,7 @@ when is_atom( CreNode ),
                      modules  => [cf_worker_node]
                     },
 
-  SpecLst = [WorkerNodeSpec#{ id => Id( I )} || I <- lists:seq( 1, NSlot )],
+  SpecLst = [WorkerNodeSpec#{ id => Id( I ) } || I <- lists:seq( 1, NSlot )],
 
   {ok, {SupFlags, SpecLst}}.
 
