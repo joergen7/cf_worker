@@ -47,8 +47,8 @@
 
 start_link( F ) when is_function( F, 0 ) ->
   case F() of
-    {ok, CreName}      -> cre_worker:start_link( CreName, ?MODULE, [] );
-    {error, undefined} -> {error, undefined}
+    {ok, CreName} -> start_link( CreName );
+    {error, E}    -> {error, E}
   end;
 
 start_link( CreName ) ->
