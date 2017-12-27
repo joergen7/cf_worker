@@ -7,7 +7,12 @@
    [kernel,
     stdlib
    ]},
-  {env,[]},
+  {env,[
+        {default_map, #{ n_wrk    => <<"auto">>,
+                         cre_node => <<"node">> }},
+        {global_file, "/usr/local/etc/cuneiform/cf_worker.json"},
+        {user_file,   ".config/cuneiform/cf_worker.json"}
+       ]},
   {modules, [cf_worker, cf_worker_process, cf_worker_sup]},
 
   {maintainers, ["Jorgen Brandt"]},

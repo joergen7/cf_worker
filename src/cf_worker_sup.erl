@@ -14,18 +14,18 @@
 %% API functions
 %%====================================================================
 
-start_link( CreNode, NSlot )
+start_link( CreNode, NWrk )
 when is_atom( CreNode ),
-     is_integer( NSlot ), NSlot > 0 ->
-  supervisor:start_link( ?MODULE, {CreNode, NSlot} ).
+     is_integer( NWrk ), NWrk > 0 ->
+  supervisor:start_link( ?MODULE, {CreNode, NWrk} ).
 
 %%====================================================================
 %% Supervisor callback functions
 %%====================================================================
 
-init( {CreNode, NSlot} )
+init( {CreNode, NWrk} )
 when is_atom( CreNode ),
-     is_integer( NSlot ), NSlot > 0 ->
+     is_integer( NWrk ), NWrk > 0 ->
 
   F =
     fun() ->    
@@ -60,7 +60,7 @@ when is_atom( CreNode ),
                      modules  => [cf_worker_process]
                     },
 
-  SpecLst = [WorkerNodeSpec#{ id => Id( I ) } || I <- lists:seq( 1, NSlot )],
+  SpecLst = [WorkerNodeSpec#{ id => Id( I ) } || I <- lists:seq( 1, NWrk )],
 
   {ok, {SupFlags, SpecLst}}.
 
