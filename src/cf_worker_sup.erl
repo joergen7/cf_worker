@@ -46,11 +46,6 @@ when is_atom( CreNode ),
       _               -> net_adm:ping( CreNode )
     end,
 
-  % make sure all directories exist
-  filelib:ensure_dir( WrkDir++"/" ),
-  filelib:ensure_dir( RepoDir++"/" ),
-  filelib:ensure_dir( DataDir++"/" ),
-
   SupFlags = #{
                strategy  => one_for_one,
                intensity => 1,

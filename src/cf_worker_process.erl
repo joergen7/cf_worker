@@ -41,6 +41,8 @@
 
 -export( [start_link/1] ).
 
+-record( cf_worker_state, {wrk_dir, repo_dir, data_dir} ).
+
 %%====================================================================
 %% API functions
 %%====================================================================
@@ -75,16 +77,26 @@ do_stageout( _A, _F, _UsrInfo ) ->
 
 -spec init( WrkArg :: _ ) -> UsrInfo :: _.
 
-init( _WrkArg ) ->
-  io:format( "TODO: init~n" ),
-  [].
+init( {WrkDir, RepoDir, DataDir} ) ->
+  #cf_worker_state{ wrk_dir  = WrkDir,
+                    repo_dir = RepoDir,
+                    data_dir = DataDir }.
 
 
 -spec run( A :: _, UsrInfo :: _ ) -> {ok, R :: _} | {error, Reason :: _}.
 
-run( A, _UsrInfo ) ->
-  io:format( "TODO: run~n" ),
-  {ok, A}.
+run( Request, CfWorkerState ) ->
+
+  Dir = effi_wrk_dir( Request, CfWorkerState ),
+
+  ok = filelib:ensure_dir( Dir++"/" ),
+
+  Reply = effi:handle_request( Request, Dir ),
+  
+  case Reply of
+    #{ result := #{ status := <<"ok">> } }    -> {ok, Reply};
+    #{ result := #{ status := <<"error">> } } -> {error, Reply}
+  end.
 
 
 -spec stagein_lst( A :: _, UsrInfo :: _ ) -> [F :: _].
@@ -105,6 +117,11 @@ when A       :: _,
      Reason  :: {stagein | stageout, [_]} | {run, _},
      UsrInfo :: _.
 
-error_to_expr( _A, _Reason, _UsrInfo ) ->
-  io:format( "TODO: error_to_expr" ),
-  err.
+error_to_expr( _A, Reason, _UsrInfo ) ->
+  Reason.
+
+
+
+
+effi_wrk_dir( #{ app_id := AppId }, #cf_worker_state{ wrk_dir = WorkDir } ) ->
+  string:join( [WorkDir, binary_to_list( AppId )], "/" ),
