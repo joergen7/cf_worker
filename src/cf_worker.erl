@@ -140,12 +140,12 @@ main( CmdLine ) ->
           case lists:keyfind( cre_node, 1, OptLst ) of
             false               -> #{};
             {cre_node, CreNode} -> #{ cre_node => CreNode }
-          end
+          end,
 
         % extract number of workers
         M2 =
           case lists:keyfind( n_wrk, 1, OptLst ) of
-            false                 -> M1
+            false                 -> M1;
             {n_wrk, 0}            -> M1#{ n_wrk => <<"auto">> };
             {n_wrk, N} when N > 0 -> M1#{ n_wrk => N };
             A                     -> error( {invalid_arg, A} )
