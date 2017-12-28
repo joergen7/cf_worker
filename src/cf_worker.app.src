@@ -9,7 +9,10 @@
    ]},
   {env,[
         {default_map, #{ n_wrk    => <<"auto">>,
-                         cre_node => <<"node">> }},
+                         cre_node => <<"node">>,
+                         wrk_dir  => <<"./cuneiform/tmp">>,
+                         repo_dir => <<"./cuneiform/repo">>,
+                         data_dir => <<"./data">> }},
         {global_file, "/usr/local/etc/cuneiform/cf_worker.json"},
         {user_file,   ".config/cuneiform/cf_worker.json"}
        ]},

@@ -14,18 +14,19 @@
 %% API functions
 %%====================================================================
 
-start_link( CreNode, NWrk )
-when is_atom( CreNode ),
-     is_integer( NWrk ), NWrk > 0 ->
-  supervisor:start_link( ?MODULE, {CreNode, NWrk} ).
+start_link( CreNode, NWrk, WrkDir, RepoDir, DataDir ) ->
+  supervisor:start_link( ?MODULE, {CreNode, NWrk, WrkDir, RepoDir, DataDir} ).
 
 %%====================================================================
 %% Supervisor callback functions
 %%====================================================================
 
-init( {CreNode, NWrk} )
+init( {CreNode, NWrk, WrkDir, RepoDir, DataDir} )
 when is_atom( CreNode ),
-     is_integer( NWrk ), NWrk > 0 ->
+     is_integer( NWrk ), NWrk > 0,
+     is_list( WrkDir ),
+     is_list( RepoDir ),
+     is_list( DataDir ) ->
 
   F =
     fun() ->    
@@ -38,11 +39,17 @@ when is_atom( CreNode ),
       list_to_atom( S )
     end,
 
+  % connect with CRE
   pong =
     case CreNode of
       'nonode@nohost' -> pong;
       _               -> net_adm:ping( CreNode )
     end,
+
+  % make sure all directories exist
+  filelib:ensure_dir( WrkDir++"/" ),
+  filelib:ensure_dir( RepoDir++"/" ),
+  filelib:ensure_dir( DataDir++"/" ),
 
   SupFlags = #{
                strategy  => one_for_one,

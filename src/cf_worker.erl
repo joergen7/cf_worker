@@ -76,12 +76,20 @@ start( _StartType, _StartArgs ) ->
 
     end,
 
-  error_logger:info_report( [{application,     cf_worker},
-                             {node,            node()},
-                             {n_wrk,           NWrk},
-                             {cre_node,        CreNode}] ),
+  WrkDir = binary_to_list( maps:get( wrk_dir, ConfMap ) ),
+  RepoDir = binary_to_list( maps:get( repo_dir, ConfMap ) ),
+  DataDir = binary_to_list( maps:get( data_dir, ConfMap ) ),
 
-  cf_worker_sup:start_link( CreNode, NWrk ).
+
+  error_logger:info_report( [{application, cf_worker},
+                             {node,        node()},
+                             {n_wrk,       NWrk},
+                             {cre_node,    CreNode},
+                             {wrk_dir,    WrkDir},
+                             {repo_dir,    RepoDir},
+                             {data_dir,    DataDir}] ),
+
+  cf_worker_sup:start_link( CreNode, NWrk, WrkDir, RepoDir, DataDir ).
 
 
 
@@ -121,32 +129,30 @@ main( CmdLine ) ->
         SupplFile =
           case lists:keyfind( conf, 1, OptLst ) of
             false            -> undefined;
-            {conf, S1} -> S1
+            {suppl_file, S1} -> S1
           end,
 
         % set supplement file
         ok = application:set_env( ?MODULE, suppl_file, SupplFile ),
 
         % extract CRE node name
-        CreNode =
-          case lists:keyfind( crenode, 1, OptLst ) of
-            false         -> throw( help );
-            {crenode, S2} -> list_to_binary( S2 )
-          end,
+        M1 =
+          case lists:keyfind( cre_node, 1, OptLst ) of
+            false               -> #{};
+            {cre_node, CreNode} -> #{ cre_node => CreNode }
+          end
 
         % extract number of workers
-        NWrk =
-          case lists:keyfind( nwrk, 1, OptLst ) of
-            {nwrk, 0}            -> <<"auto">>;
-            {nwrk, N} when N > 0 -> N;
-            A                    -> error( {invalid_arg, A} )
+        M2 =
+          case lists:keyfind( n_wrk, 1, OptLst ) of
+            false                 -> M1
+            {n_wrk, 0}            -> M1#{ n_wrk => <<"auto">> };
+            {n_wrk, N} when N > 0 -> M1#{ n_wrk => N };
+            A                     -> error( {invalid_arg, A} )
           end,
 
-        % compose flag map
-        FlagMap = #{ cre_node => CreNode, n_wrk => NWrk },
-
         % set flag map
-        ok = application:set_env( ?MODULE, flag_map, FlagMap ),
+        ok = application:set_env( ?MODULE, flag_map, M2 ),
 
         % start worker application
         ok = start(),
@@ -163,7 +169,7 @@ main( CmdLine ) ->
 
   catch
     throw:version -> print_version();
-    throw:help    -> print_usage()
+    throw:help    -> print_help()
   end.
 
 
@@ -173,16 +179,15 @@ main( CmdLine ) ->
 
 get_optspec_lst() ->
   [
-   {version,    $v, "version",    undefined,    "Show cf_worker version."},
-   {help,       $h, "help",       undefined,    "Show command line options."},
-   {suppl_file, $c, "suppl_file", string,       "Supplementary configuration file."},
-   {cre_node,   $r, "cre_node",   string,       "Erlang node running the CRE application (must be specified)."},
-   {n_wrk,      $n, "n_wrk",      {integer, 0}, "Number of worker processes to start. 0 means auto-detect available processors."}
+   {version,    $v, "version",    undefined, "Show cf_worker version."},
+   {help,       $h, "help",       undefined, "Show command line options."},
+   {suppl_file, $s, "suppl_file", binary,    "Supplementary configuration file."},
+   {cre_node,   $c, "cre_node",   binary,    "Erlang node running the CRE application (must be specified)."},
+   {n_wrk,      $n, "n_wrk",      integer,   "Number of worker processes to start. 0 means auto-detect available processors."}
   ].
 
-print_usage() ->
-  getopt:usage( get_optspec_lst(), "cf_worker" ),
-  io:format( "The cre_node argument must be specified.~n~n" ).
+print_help() ->
+  getopt:usage( get_optspec_lst(), "cf_worker" ).
 
 print_version() ->
   io:format( "application: cf_worker~nversion:     ~s~nbuild:       ~s~n",
