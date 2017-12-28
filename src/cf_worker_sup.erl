@@ -55,7 +55,7 @@ when is_atom( CreNode ),
   WorkerNodeSpec = #{
                      start    => {cf_worker_process,
                                   start_link,
-                                  [F]},
+                                  [F, WrkDir, RepoDir, DataDir]},
                      restart  => permanent,
                      shutdown => 5000,
                      type     => worker,

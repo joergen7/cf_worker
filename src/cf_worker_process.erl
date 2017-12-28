@@ -39,7 +39,7 @@
 -export( [do_stagein/3, do_stageout/3, init/1, run/2, stagein_lst/2,
           stageout_lst/3, error_to_expr/3] ).
 
--export( [start_link/1] ).
+-export( [start_link/4] ).
 
 -record( cf_worker_state, {wrk_dir, repo_dir, data_dir} ).
 
@@ -47,14 +47,14 @@
 %% API functions
 %%====================================================================
 
-start_link( F ) when is_function( F, 0 ) ->
+start_link( F, WrkDir, RepoDir, DataDir ) when is_function( F, 0 ) ->
   case F() of
-    {ok, CreName} -> start_link( CreName );
+    {ok, CreName} -> start_link( CreName, WrkDir, RepoDir, DataDir );
     {error, E}    -> {error, E}
   end;
 
-start_link( CreName ) ->
-  cre_worker:start_link( CreName, ?MODULE, [] ).
+start_link( CreName, WrkDir, RepoDir, DataDir ) ->
+  cre_worker:start_link( CreName, ?MODULE, {WrkDir, RepoDir, DataDir} ).
 
 
 %%====================================================================
@@ -75,7 +75,10 @@ do_stageout( _A, _F, _UsrInfo ) ->
   ok.
 
 
--spec init( WrkArg :: _ ) -> UsrInfo :: _.
+-spec init( {WrkDir, RepoDir, DataDir} ) -> #cf_worker_state{}
+when WrkDir  :: string(),
+     RepoDir :: string(),
+     DataDir :: string().
 
 init( {WrkDir, RepoDir, DataDir} ) ->
   #cf_worker_state{ wrk_dir  = WrkDir,
@@ -124,4 +127,4 @@ error_to_expr( _A, Reason, _UsrInfo ) ->
 
 
 effi_wrk_dir( #{ app_id := AppId }, #cf_worker_state{ wrk_dir = WorkDir } ) ->
-  string:join( [WorkDir, binary_to_list( AppId )], "/" ),
+  string:join( [WorkDir, binary_to_list( AppId )], "/" ).
