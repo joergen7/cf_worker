@@ -120,7 +120,7 @@ when A       :: _,
      Reason  :: {stagein | stageout, [_]} | {run, _},
      UsrInfo :: _.
 
-error_to_expr( _A, Reason, _UsrInfo ) ->
+error_to_expr( _A, {run, Reason}, _UsrInfo ) ->
   Reason.
 
 
