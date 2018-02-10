@@ -81,7 +81,8 @@ start( _StartType, _StartArgs ) ->
   DataDir = binary_to_list( maps:get( data_dir, ConfMap ) ),
 
 
-  error_logger:info_report( [{application, cf_worker},
+  error_logger:info_report( [{info, "starting application"},
+                             {application, cf_worker},
                              {node,        node()},
                              {n_wrk,       NWrk},
                              {cre_node,    CreNode},
