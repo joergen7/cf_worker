@@ -45,7 +45,10 @@
 %%====================================================================
 
 start_link( CreNode, NWrk, WrkDir, RepoDir, DataDir ) ->
-  supervisor:start_link( ?MODULE, {CreNode, NWrk, WrkDir, RepoDir, DataDir} ).
+
+  supervisor:start_link( {local, cf_worker_sup},
+                         ?MODULE,
+                         {CreNode, NWrk, WrkDir, RepoDir, DataDir} ).
 
 %%====================================================================
 %% Supervisor callback functions

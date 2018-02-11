@@ -186,6 +186,7 @@ main( Args ) ->
 
         % start worker application
         ok = start(),
+        true = link( cf_worker_sup ),
 
         % wait indefinitely
         receive
