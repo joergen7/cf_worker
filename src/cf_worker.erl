@@ -46,7 +46,6 @@
 %%====================================================================
 
 -define( VSN, "0.1.0" ).
--define( BUILD, "2017-12-27" ).
 
 %%====================================================================
 %% API functions
@@ -133,11 +132,11 @@ stop( _State ) ->
 %% Escript main function
 %%====================================================================
 
-main( CmdLine ) ->
+main( Args ) ->
 
   try
 
-    case getopt:parse( get_optspec_lst(), CmdLine ) of
+    case getopt:parse( get_optspec_lst(), Args ) of
 
       {error, Reason} ->
         error( Reason );
@@ -147,18 +146,18 @@ main( CmdLine ) ->
         % break if version needs to be displayed
         case lists:member( version, OptLst ) of
           false -> ok;
-          _     -> throw( version )
+          true  -> throw( version )
         end,
 
         % break if help needs to be displayed
         case lists:member( help, OptLst ) of
           false -> ok;
-          _     -> throw( help )
+          true  -> throw( help )
         end,
 
         % extract supplement configuration file
         SupplFile =
-          case lists:keyfind( conf, 1, OptLst ) of
+          case lists:keyfind( suppl_file, 1, OptLst ) of
             false            -> undefined;
             {suppl_file, S1} -> S1
           end,
@@ -221,5 +220,4 @@ print_help() ->
   getopt:usage( get_optspec_lst(), "cf_worker" ).
 
 print_version() ->
-  io:format( "application: cf_worker~nversion:     ~s~nbuild:       ~s~n",
-             [?VSN, ?BUILD] ).
+  io:format( "cf_worker ~s~n", [?VSN] ).
