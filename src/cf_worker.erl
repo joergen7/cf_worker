@@ -188,12 +188,13 @@ main( Args ) ->
         ok = start(),
 
         % attach escript process
-        _ = process_flag( trap_exit, true ),
-        true = link( whereis( cf_worker_sup ) ),
+        MonitorRef = monitor( process, cf_worker_sup ),
 
         % wait indefinitely
         receive
-          _ -> timer:sleep( 1000 )
+          {'DOWN', MonitorRef, process, _Object, _Info} ->
+            ok = timer:sleep( 1000 ),
+            ok
         end;
 
       {ok, {_, L}} ->
