@@ -186,6 +186,6 @@ when is_list( Dir )->
       end
     end,
 
-  FileLst = file:list_dir( Dir ),
+  {ok, FileLst} = file:list_dir( Dir ),
   ok = lists:foreach( F, FileLst ),
   ok = file:del_dir( Dir ).
