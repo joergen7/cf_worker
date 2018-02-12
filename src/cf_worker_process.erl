@@ -41,6 +41,12 @@
 
 -export( [start_link/4] ).
 
+-export( [delete_dir/1] ).
+
+%%====================================================================
+%% Record definitions
+%%====================================================================
+
 -record( cf_worker_state, {wrk_dir, repo_dir, data_dir} ).
 
 %%====================================================================
@@ -174,7 +180,10 @@ delete_dir( Dir )
 when is_list( Dir )->
 
   F =
-    fun( File ) when is_list( File ) ->
+    fun( F ) when is_list( F ) ->
+
+      File = string:join( [Dir, F], "/" ),
+
       case filelib:is_dir( File ) of
 
         true  ->
