@@ -138,8 +138,8 @@ main( Args ) ->
 
     case getopt:parse( get_optspec_lst(), Args ) of
 
-      {error, Reason} ->
-        error( Reason );
+      {error, R1} ->
+        throw( {error, R1} );
 
       {ok, {OptLst, []}} ->
 
@@ -178,14 +178,18 @@ main( Args ) ->
             false                 -> M1;
             {n_wrk, 0}            -> M1#{ n_wrk => <<"auto">> };
             {n_wrk, N} when N > 0 -> M1#{ n_wrk => N };
-            A                     -> error( {invalid_arg, A} )
+            A                     -> throw( {error, {invalid_arg, A}} )
           end,
 
         % set flag map
         ok = application:set_env( ?MODULE, flag_map, M2 ),
 
         % start worker application
-        ok = start(),
+        ok =
+          case start() of
+            ok              -> ok;
+            {error, R2} -> throw( {error, R2} )
+          end,
 
         % attach escript process
         MonitorRef = monitor( process, cf_worker_sup ),
@@ -198,13 +202,14 @@ main( Args ) ->
         end;
 
       {ok, {_, L}} ->
-        error( {bad_arg, L} )
+        throw( {error, {bad_arg, L}} )
 
     end
 
   catch
-    throw:version -> print_version();
-    throw:help    -> print_help()
+    throw:version         -> print_version();
+    throw:help            -> print_help();
+    throw:{error, Reason} -> io:format( "~n~p~n", [Reason] )
   end.
 
 
