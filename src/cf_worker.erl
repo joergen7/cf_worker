@@ -186,11 +186,14 @@ main( Args ) ->
 
         % start worker application
         ok = start(),
+
+        % attach escript process
+        _ = process_flag( trap_exit, true ),
         true = link( whereis( cf_worker_sup ) ),
 
         % wait indefinitely
         receive
-          _ -> ok
+          _ -> timer:sleep( 1000 )
         end;
 
       {ok, {_, L}} ->

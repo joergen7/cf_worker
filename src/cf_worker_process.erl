@@ -36,8 +36,8 @@
 %% Exports
 %%====================================================================
 
--export( [do_stagein/3, do_stageout/3, init/1, run/2, stagein_lst/2,
-          stageout_lst/3, error_to_expr/3] ).
+-export( [init/1, prepare_case/2, stagein_lst/2, do_stagein/3, run/2, 
+          stageout_lst/3, do_stageout/3, error_to_expr/3, cleanup_case/2] ).
 
 -export( [start_link/4] ).
 
@@ -61,20 +61,6 @@ start_link( CreName, WrkDir, RepoDir, DataDir ) ->
 %% CRE worker callback functions
 %%====================================================================
 
--spec do_stagein( A :: _, F :: _, UsrInfo :: _ ) -> ok | {error, enoent}.
-
-do_stagein( _A, _F, _UsrInfo ) ->
-  io:format( "TODO: do_stagein~n" ),
-  ok.
-
-
--spec do_stageout( A :: _, F :: _, UsrInfo :: _ ) -> ok | {error, enoent}.
-
-do_stageout( _A, _F, _UsrInfo ) ->
-  io:format( "TODO: do_stageout~n" ),
-  ok.
-
-
 -spec init( {WrkDir, RepoDir, DataDir} ) -> #cf_worker_state{}
 when WrkDir  :: string(),
      RepoDir :: string(),
@@ -86,15 +72,40 @@ init( {WrkDir, RepoDir, DataDir} ) ->
                     data_dir = DataDir }.
 
 
+-spec prepare_case( A :: _, CfWorkerState :: _ ) -> ok.
+
+prepare_case( A, CfWorkerState ) ->
+
+  error_logger:info_report(
+    [{info, "receiving request"},
+     {application, cf_worker},
+     {cf_worker_process_pid, self()},
+     {app, A}] ),
+
+  Dir = effi_wrk_dir( A, CfWorkerState ),
+  ok = filelib:ensure_dir( Dir++"/" ).  
+
+
+-spec stagein_lst( A :: _, UsrInfo :: _ ) -> [F :: _].
+
+stagein_lst( _A, _UsrInfo ) ->
+  ok = error_logger:warning_msg( "TODO: stagein_lst" ),
+  [].
+
+
+-spec do_stagein( A :: _, F :: _, UsrInfo :: _ ) -> ok | {error, enoent}.
+
+do_stagein( _A, _F, _UsrInfo ) ->
+  ok = error_logger:warning_msg( "TODO: do_stagein" ),
+  ok.
+
+
 -spec run( A :: _, UsrInfo :: _ ) -> {ok, R :: _} | {error, Reason :: _}.
 
-run( Request, CfWorkerState ) ->
+run( A, CfWorkerState ) ->
 
-  Dir = effi_wrk_dir( Request, CfWorkerState ),
-
-  ok = filelib:ensure_dir( Dir++"/" ),
-
-  Reply = effi:handle_request( Request, Dir ),
+  Dir = effi_wrk_dir( A, CfWorkerState ),
+  Reply = effi:handle_request( A, Dir ),
   
   case Reply of
     #{ result := #{ status := <<"ok">> } }    -> {ok, Reply};
@@ -102,18 +113,19 @@ run( Request, CfWorkerState ) ->
   end.
 
 
--spec stagein_lst( A :: _, UsrInfo :: _ ) -> [F :: _].
-
-stagein_lst( _A, _UsrInfo ) ->
-  io:format( "TODO: stagein_lst~n" ),
-  [].
-
-
 -spec stageout_lst( A :: _, R :: _, UsrInfo :: _ ) -> [F :: _].
 
 stageout_lst( _A, _R, _UsrInfo ) ->
-  io:format( "TODO: stageout_lst~n" ),
+  ok = error_logger:warning_msg( "TODO: stageout_lst" ),
   [].
+
+
+-spec do_stageout( A :: _, F :: _, UsrInfo :: _ ) -> ok | {error, enoent}.
+
+do_stageout( _A, _F, _UsrInfo ) ->
+  ok = error_logger:warning_msg( "TODO: do_stageout" ),
+  ok.
+
 
 -spec error_to_expr( A, Reason, UsrInfo ) -> _
 when A       :: _,
@@ -124,7 +136,56 @@ error_to_expr( _A, {run, Reason}, _UsrInfo ) ->
   Reason.
 
 
+-spec cleanup_case( A :: _, CfWorkerState :: _ ) -> ok.
+
+cleanup_case( A, CfWorkerState ) ->
+
+  #{ app_id := AppId } = A,
+
+  ok =
+    error_logger:info_report(
+      [{info, "sending reply"},
+       {application, cf_worker},
+       {cf_worker_process_pid, self()},
+       {app_id, AppId}] ),
+  
+  Dir = effi_wrk_dir( A, CfWorkerState ),
+  ok = delete_dir( Dir ).
 
 
-effi_wrk_dir( #{ app_id := AppId }, #cf_worker_state{ wrk_dir = WorkDir } ) ->
+%%====================================================================
+%% Internal functions
+%%====================================================================
+
+-spec effi_wrk_dir( A, CfWorkerState ) -> string()
+when A             :: #{ app_id => binary() },
+     CfWorkerState :: #cf_worker_state{}.
+
+effi_wrk_dir( #{ app_id := AppId }, #cf_worker_state{ wrk_dir = WorkDir } )
+when is_binary( AppId ),
+     is_list( WorkDir ) ->
+
   string:join( [WorkDir, binary_to_list( AppId )], "/" ).
+
+
+-spec delete_dir( Dir :: string() ) -> ok.
+
+delete_dir( Dir )
+when is_list( Dir )->
+
+  F =
+    fun( File ) when is_list( File ) ->
+      case filelib:is_dir( File ) of
+
+        true  ->
+          ok = delete_dir( File );
+
+        false ->
+          ok = file:delete( File )
+
+      end
+    end,
+
+  FileLst = file:list_dir( Dir ),
+  ok = lists:foreach( F, FileLst ),
+  ok = file:del_dir( Dir ).
