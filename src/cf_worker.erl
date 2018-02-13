@@ -196,7 +196,7 @@ main( Args ) ->
 
             {error, R2} ->
               throw( {error, R2} )
-              
+
           end,
 
         % attach escript process
@@ -205,8 +205,7 @@ main( Args ) ->
         % wait indefinitely
         receive
           {'DOWN', MonitorRef, process, _Object, _Info} ->
-            ok = timer:sleep( 1000 ),
-            ok
+            ok = timer:sleep( 1000 )
         end;
 
       {ok, {_, L}} ->
@@ -215,9 +214,16 @@ main( Args ) ->
     end
 
   catch
-    throw:version         -> print_version();
-    throw:help            -> print_help();
-    throw:{error, Reason} -> io:format( "~n~p~n", [Reason] )
+
+    throw:version ->
+      ok = print_version();
+
+    throw:help ->
+      ok = print_help();
+
+    throw:{error, Reason} ->
+      ok = io:format( "~n~p~n", [Reason] )
+
   end.
 
 
