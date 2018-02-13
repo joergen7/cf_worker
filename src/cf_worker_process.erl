@@ -41,7 +41,6 @@
 
 -export( [start_link/4] ).
 
--export( [delete_dir/1] ).
 
 %%====================================================================
 %% Record definitions
@@ -81,7 +80,15 @@ init( {WrkDir, RepoDir, DataDir} ) ->
 -spec prepare_case( A :: _, CfWorkerState :: _ ) -> ok.
 
 prepare_case( A, CfWorkerState ) ->
+  
   Dir = effi_wrk_dir( A, CfWorkerState ),
+  
+  ok =
+    case delete_dir( Dir ) of
+      ok -> ok;
+      {error, enoent} -> ok
+    end,
+
   ok = filelib:ensure_dir( Dir++"/" ).  
 
 
@@ -178,6 +185,13 @@ when is_list( Dir )->
       end
     end,
 
-  {ok, FileLst} = file:list_dir( Dir ),
-  ok = lists:foreach( F, FileLst ),
-  ok = file:del_dir( Dir ).
+  case file:list_dir( Dir ) of
+
+    {ok, FileLst} ->
+      ok = lists:foreach( F, FileLst ),
+      ok = file:del_dir( Dir );
+
+    {error, Reason} ->
+      {error, Reason}
+
+  end.

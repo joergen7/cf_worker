@@ -110,7 +110,7 @@ start( _StartType, _StartArgs ) ->
   DataDir = binary_to_list( maps:get( data_dir, ConfMap ) ),
 
 
-  error_logger:info_report( [{info, "ready to start supervision tree"},
+  error_logger:info_report( [{info, "starting Cuneiform worker pool"},
                              {application, cf_worker},
                              {node,        node()},
                              {n_wrk,       NWrk},
