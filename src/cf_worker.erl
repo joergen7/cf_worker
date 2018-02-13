@@ -187,8 +187,16 @@ main( Args ) ->
         % start worker application
         ok =
           case start() of
-            ok              -> ok;
-            {error, R2} -> throw( {error, R2} )
+
+            ok ->
+              ok;
+
+            {error, {{shutdown, {failed_to_start_child, _, R2}}, _}} ->
+              throw( {error, R2} );
+
+            {error, R2} ->
+              throw( {error, R2} )
+              
           end,
 
         % attach escript process
