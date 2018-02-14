@@ -94,7 +94,7 @@ prepare_case( A, CfWorkerState ) ->
 
 -spec stagein_lst( A :: _, UsrInfo :: _ ) -> [F :: _].
 
-stagein_lst( A, CfWorkerState ) ->
+stagein_lst( A, _CfWorkerState ) ->
 
   #{ lambda := Lambda, arg_bind_lst := ArgBindLst } = A,
   #{ arg_type_lst := ArgTypeLst } = Lambda,
@@ -111,14 +111,14 @@ do_stagein( A, F, CfWorkerState ) ->
 
   try
 
-    RepoFile = string:join( [RepoDir, F], "/" ),
-    case is_regular( RepoFile ) of
+    RepoFile = string:join( [RepoDir, binary_to_list( F )], "/" ),
+    case file:is_regular( RepoFile ) of
       true  -> throw( {stagein, RepoFile} );
       false -> ok
     end,
 
-    DataFile = string:join( [DataDir, F], "/" ),
-    case is_regular( DataFile ) of
+    DataFile = string:join( [DataDir, binary_to_list( F )], "/" ),
+    case file:is_regular( DataFile ) of
       true  -> throw( {stagein, DataFile} );
       false -> ok
     end,
@@ -129,8 +129,9 @@ do_stagein( A, F, CfWorkerState ) ->
     throw:{stagein, SrcFile} ->
       Dir = get_work_dir( A, CfWorkerState ),
       DestFile = string:join( [Dir, F], "/" ),
-      ok = file:make_symlink( SrcFile, DestFile )
-  end
+      ok = file:copy( SrcFile, DestFile )
+      % ok = file:make_symlink( SrcFile, DestFile )
+  end.
 
 
 -spec run( A :: _, UsrInfo :: _ ) -> {ok, R :: _} | {error, Reason :: _}.
@@ -148,7 +149,7 @@ run( A, CfWorkerState ) ->
 
 -spec stageout_lst( A :: _, R :: _, UsrInfo :: _ ) -> [F :: _].
 
-stageout_lst( A, R, CfWorkerState ) ->
+stageout_lst( A, R, _CfWorkerState ) ->
 
   #{ lambda := Lambda } = A,
   #{ ret_type_lst := RetTypeLst } = Lambda,
@@ -162,19 +163,17 @@ stageout_lst( A, R, CfWorkerState ) ->
 
 do_stageout( A, F, CfWorkerState ) ->
 
-  #{ app_id = AppId } = A,
+  #{ app_id := AppId } = A,
   #cf_worker_state{ repo_dir = RepoDir } = CfWorkerState,
 
-  Skip = byte_size( AppId )-7,
-  <<_:Skip/binary, B/binary>> = AppId,
-  S = binary_to_list( B ),
-  F1 = string:join( [S, F], "_" ),
+  F1 = binary_to_list( update_value( F, AppId ) ),
   DestFile = string:join( [RepoDir, F1], "/" ),
 
   Dir = get_work_dir( A, CfWorkerState ),
-  SrcFile = string:join( [Dir, F], "/" ),
+  SrcFile = string:join( [Dir, binary_to_list( F )], "/" ),
 
-  file:make_link( SrcFile, DestFile ).
+  % file:make_link( SrcFile, DestFile ).
+  file:copy( SrcFile, DestFile ).
 
 
 
@@ -191,9 +190,29 @@ error_to_expr( _A, {run, Reason}, _UsrInfo ) ->
 -spec cleanup_case( A :: _, R :: _, CfWorkerState :: _ ) -> R1 :: _.
 
 cleanup_case( A, R, CfWorkerState ) ->
+
+  % delete current working directory
   Dir = get_work_dir( A, CfWorkerState ),
-  ok = delete_dir( Dir ).
-  R.
+  ok = delete_dir( Dir ),
+
+  #{ lambda := Lambda } = A,
+  #{ ret_type_lst := RetTypeLst } = Lambda,
+  #{ app_id := AppId,
+     result := Result } = R,
+  #{ status := Status } = Result,
+
+  % update return value
+  case Status of
+
+    <<"ok">> ->
+      #{ ret_bind_lst := RetBindLst } = Result,
+      RetBindLst1 = update_ret_bind_lst( RetTypeLst, RetBindLst, AppId ),
+      R#{ result => Result#{ ret_bind_lst => RetBindLst1 } };
+
+    _ ->
+      R
+
+  end.
 
 
 %%====================================================================
@@ -265,8 +284,8 @@ get_stage_lst( TypeLst, BindLst ) ->
 
         <<"File">> ->
           case IsList of
-            false -> [binary_to_list( Value )|Acc];
-            true  -> [binary_to_list( X ) || X <- Value]++Acc
+            false -> [Value|Acc];
+            true  -> Value++Acc
           end;
 
         _ ->
@@ -277,3 +296,61 @@ get_stage_lst( TypeLst, BindLst ) ->
     end,
 
   lists:foldl( F, [], BindLst ).
+
+
+  -spec update_ret_bind_lst( RetTypeLst, RetBindLst, AppId ) ->
+          [#{ atom() => _ }]
+  when RetTypeLst :: [#{ atom() => _ }],
+       RetBindLst :: [#{ atom() => _ }],
+       AppId      :: binary().
+
+update_ret_bind_lst( RetTypeLst, RetBindLst, AppId )
+when is_list( RetTypeLst ),
+     is_list( RetBindLst ),
+     is_binary( AppId ) ->
+
+  F =
+    fun( RetBinding ) ->
+
+      #{ arg_name := ArgName,
+         value    := Value } = RetBinding,
+
+      TypeInfo = effi:get_type_info( ArgName, RetTypeLst ),
+
+      #{ arg_type := ArgType,
+         is_list  := IsList } = TypeInfo,
+
+      case ArgType of
+
+        <<"File">> ->
+          case IsList of
+
+            false ->
+              RetBinding#{ value := update_value( Value, AppId ) };
+
+            true ->
+              RetBinding#{ value := [update_value( B, AppId ) || B <- Value] }
+
+          end;
+
+        _ ->
+          RetBinding
+
+      end
+
+    end,
+
+  [F( Binding ) || Binding <- RetBindLst].
+
+
+-spec update_value( Value, AppId ) -> binary()
+when Value :: binary(),
+     AppId :: binary().
+
+update_value( Value, AppId )
+when is_binary( Value ),
+     is_binary( AppId ) ->
+
+  Skip = byte_size( AppId )-7,
+  <<_:Skip/binary, B/binary>> = AppId,
+  <<B/binary, "_", Value/binary>>.
