@@ -145,8 +145,9 @@ error_to_expr( _A, {run, Reason}, _UsrInfo ) ->
 -spec cleanup_case( A :: _, CfWorkerState :: _ ) -> ok.
 
 cleanup_case( A, CfWorkerState ) ->
-  Dir = effi_wrk_dir( A, CfWorkerState ),
-  ok = delete_dir( Dir ).
+  % Dir = effi_wrk_dir( A, CfWorkerState ),
+  % ok = delete_dir( Dir ).
+  ok.
 
 
 %%====================================================================
