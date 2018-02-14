@@ -37,7 +37,7 @@
 %%====================================================================
 
 -export( [init/1, prepare_case/2, stagein_lst/2, do_stagein/3, run/2, 
-          stageout_lst/3, do_stageout/3, error_to_expr/3, cleanup_case/2] ).
+          stageout_lst/3, do_stageout/3, error_to_expr/3, cleanup_case/3] ).
 
 -export( [start_link/4] ).
 
@@ -81,7 +81,7 @@ init( {WrkDir, RepoDir, DataDir} ) ->
 
 prepare_case( A, CfWorkerState ) ->
   
-  Dir = effi_wrk_dir( A, CfWorkerState ),
+  Dir = get_work_dir( A, CfWorkerState ),
   
   ok =
     case delete_dir( Dir ) of
@@ -94,23 +94,50 @@ prepare_case( A, CfWorkerState ) ->
 
 -spec stagein_lst( A :: _, UsrInfo :: _ ) -> [F :: _].
 
-stagein_lst( _A, _UsrInfo ) ->
-  % TODO: stagein_lst
-  [].
+stagein_lst( A, CfWorkerState ) ->
+
+  #{ lambda := Lambda, arg_bind_lst := ArgBindLst } = A,
+  #{ arg_type_lst := ArgTypeLst } = Lambda,
+
+  get_stage_lst( ArgTypeLst, ArgBindLst ).
 
 
 -spec do_stagein( A :: _, F :: _, UsrInfo :: _ ) -> ok | {error, enoent}.
 
-do_stagein( _A, _F, _UsrInfo ) ->
-  % TODO: do_stagein
-  ok.
+do_stagein( A, F, CfWorkerState ) ->
+
+  #cf_worker_state{ repo_dir = RepoDir,
+                    data_dir = DataDir } = CfWorkerState,
+
+  try
+
+    RepoFile = string:join( [RepoDir, F], "/" ),
+    case is_regular( RepoFile ) of
+      true  -> throw( {stagein, RepoFile} );
+      false -> ok
+    end,
+
+    DataFile = string:join( [DataDir, F], "/" ),
+    case is_regular( DataFile ) of
+      true  -> throw( {stagein, DataFile} );
+      false -> ok
+    end,
+
+    {error, enoent}
+
+  catch
+    throw:{stagein, SrcFile} ->
+      Dir = get_work_dir( A, CfWorkerState ),
+      DestFile = string:join( [Dir, F], "/" ),
+      ok = file:make_symlink( SrcFile, DestFile )
+  end
 
 
 -spec run( A :: _, UsrInfo :: _ ) -> {ok, R :: _} | {error, Reason :: _}.
 
 run( A, CfWorkerState ) ->
 
-  Dir = effi_wrk_dir( A, CfWorkerState ),
+  Dir = get_work_dir( A, CfWorkerState ),
   Reply = effi:handle_request( A, Dir ),
   
   case Reply of
@@ -121,16 +148,34 @@ run( A, CfWorkerState ) ->
 
 -spec stageout_lst( A :: _, R :: _, UsrInfo :: _ ) -> [F :: _].
 
-stageout_lst( _A, _R, _UsrInfo ) ->
-  % TODO: stageout_lst
-  [].
+stageout_lst( A, R, CfWorkerState ) ->
+
+  #{ lambda := Lambda } = A,
+  #{ ret_type_lst := RetTypeLst } = Lambda,
+  #{ result := Result } = R,
+  #{ ret_bind_lst := RetBindLst } = Result,
+
+  get_stage_lst( RetTypeLst, RetBindLst ).
 
 
 -spec do_stageout( A :: _, F :: _, UsrInfo :: _ ) -> ok | {error, enoent}.
 
-do_stageout( _A, _F, _UsrInfo ) ->
-  % TODO: do_stageout
-  ok.
+do_stageout( A, F, CfWorkerState ) ->
+
+  #{ app_id = AppId } = A,
+  #cf_worker_state{ repo_dir = RepoDir } = CfWorkerState,
+
+  Skip = byte_size( AppId )-7,
+  <<_:Skip/binary, B/binary>> = AppId,
+  S = binary_to_list( B ),
+  F1 = string:join( [S, F], "_" ),
+  DestFile = string:join( [RepoDir, F1], "/" ),
+
+  Dir = get_work_dir( A, CfWorkerState ),
+  SrcFile = string:join( [Dir, F], "/" ),
+
+  file:make_link( SrcFile, DestFile ).
+
 
 
 -spec error_to_expr( A, Reason, UsrInfo ) -> _
@@ -143,23 +188,23 @@ error_to_expr( _A, {run, Reason}, _UsrInfo ) ->
   Reason.
 
 
--spec cleanup_case( A :: _, CfWorkerState :: _ ) -> ok.
+-spec cleanup_case( A :: _, R :: _, CfWorkerState :: _ ) -> R1 :: _.
 
-cleanup_case( A, CfWorkerState ) ->
-  % Dir = effi_wrk_dir( A, CfWorkerState ),
-  % ok = delete_dir( Dir ).
-  ok.
+cleanup_case( A, R, CfWorkerState ) ->
+  Dir = get_work_dir( A, CfWorkerState ),
+  ok = delete_dir( Dir ).
+  R.
 
 
 %%====================================================================
 %% Internal functions
 %%====================================================================
 
--spec effi_wrk_dir( A, CfWorkerState ) -> string()
+-spec get_work_dir( A, CfWorkerState ) -> string()
 when A             :: #{ app_id => binary() },
      CfWorkerState :: #cf_worker_state{}.
 
-effi_wrk_dir( #{ app_id := AppId }, #cf_worker_state{ wrk_dir = WorkDir } )
+get_work_dir( #{ app_id := AppId }, #cf_worker_state{ wrk_dir = WorkDir } )
 when is_binary( AppId ),
      is_list( WorkDir ) ->
 
@@ -197,3 +242,38 @@ when is_list( Dir )->
       {error, Reason}
 
   end.
+
+
+-spec get_stage_lst( TypeLst, BindLst ) -> [string()]
+when TypeLst :: [#{ atom() => _ }],
+     BindLst :: [#{ atom() => _ }].
+
+get_stage_lst( TypeLst, BindLst ) ->
+
+  F =
+    fun( Binding, Acc ) ->
+
+      #{ arg_name := ArgName,
+         value    := Value } = Binding,
+
+      TypeInfo = effi:get_type_info( ArgName, TypeLst ),
+
+      #{ arg_type := ArgType,
+         is_list  := IsList } = TypeInfo,
+
+      case ArgType of
+
+        <<"File">> ->
+          case IsList of
+            false -> [binary_to_list( Value )|Acc];
+            true  -> [binary_to_list( X ) || X <- Value]++Acc
+          end;
+
+        _ ->
+          Acc
+
+      end
+
+    end,
+
+  lists:foldl( F, [], BindLst ).

@@ -115,7 +115,7 @@ start( _StartType, _StartArgs ) ->
                              {node,        node()},
                              {n_wrk,       NWrk},
                              {cre_node,    CreNode},
-                             {wrk_dir,    WrkDir},
+                             {wrk_dir,     WrkDir},
                              {repo_dir,    RepoDir},
                              {data_dir,    DataDir}] ),
 
