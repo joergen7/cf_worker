@@ -112,13 +112,13 @@ do_stagein( A, F, CfWorkerState ) ->
   try
 
     RepoFile = string:join( [RepoDir, binary_to_list( F )], "/" ),
-    case file:is_regular( RepoFile ) of
+    case filelib:is_regular( RepoFile ) of
       true  -> throw( {stagein, RepoFile} );
       false -> ok
     end,
 
     DataFile = string:join( [DataDir, binary_to_list( F )], "/" ),
-    case file:is_regular( DataFile ) of
+    case filelib:is_regular( DataFile ) of
       true  -> throw( {stagein, DataFile} );
       false -> ok
     end,
@@ -129,7 +129,7 @@ do_stagein( A, F, CfWorkerState ) ->
     throw:{stagein, SrcFile} ->
       Dir = get_work_dir( A, CfWorkerState ),
       DestFile = string:join( [Dir, F], "/" ),
-      ok = file:copy( SrcFile, DestFile )
+      {ok, _} = file:copy( SrcFile, DestFile )
       % ok = file:make_symlink( SrcFile, DestFile )
   end.
 
@@ -187,7 +187,10 @@ error_to_expr( _A, {run, Reason}, _UsrInfo ) ->
   Reason.
 
 
--spec cleanup_case( A :: _, R :: _, CfWorkerState :: _ ) -> R1 :: _.
+-spec cleanup_case( A, R, CfWorkerState ) -> R1 :: #{ atom() => _ }
+when A             :: #{ atom() => _ },
+     R             :: #{ atom() => _ },
+     CfWorkerState :: #cf_worker_state{}.
 
 cleanup_case( A, R, CfWorkerState ) ->
 
@@ -220,7 +223,7 @@ cleanup_case( A, R, CfWorkerState ) ->
 %%====================================================================
 
 -spec get_work_dir( A, CfWorkerState ) -> string()
-when A             :: #{ app_id => binary() },
+when A             :: #{ atom() => _ },
      CfWorkerState :: #cf_worker_state{}.
 
 get_work_dir( #{ app_id := AppId }, #cf_worker_state{ wrk_dir = WorkDir } )
@@ -230,7 +233,7 @@ when is_binary( AppId ),
   string:join( [WorkDir, binary_to_list( AppId )], "/" ).
 
 
--spec delete_dir( Dir :: string() ) -> ok.
+-spec delete_dir( Dir :: string() ) -> ok | {error, _}.
 
 delete_dir( Dir )
 when is_list( Dir )->
@@ -298,11 +301,11 @@ get_stage_lst( TypeLst, BindLst ) ->
   lists:foldl( F, [], BindLst ).
 
 
-  -spec update_ret_bind_lst( RetTypeLst, RetBindLst, AppId ) ->
-          [#{ atom() => _ }]
-  when RetTypeLst :: [#{ atom() => _ }],
-       RetBindLst :: [#{ atom() => _ }],
-       AppId      :: binary().
+-spec update_ret_bind_lst( RetTypeLst, RetBindLst, AppId ) ->
+        [#{ atom() => _ }]
+when RetTypeLst :: [#{ atom() => _ }],
+     RetBindLst :: [#{ atom() => _ }],
+     AppId      :: binary().
 
 update_ret_bind_lst( RetTypeLst, RetBindLst, AppId )
 when is_list( RetTypeLst ),
