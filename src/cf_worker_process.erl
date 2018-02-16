@@ -182,7 +182,16 @@ when A       :: _,
      Reason  :: {stagein | stageout, [_]} | {run, _},
      UsrInfo :: _.
 
-% TODO: encode staging errors
+error_to_expr( _A, {stagein, FileLst}, _UsrInfo ) ->
+  #{ status   => <<"error">>,
+     stage    => <<"stagein">>,
+     file_lst => FileLst };
+
+error_to_expr( _A, {stageout, FileLst}, _UsrInfo ) ->
+  #{ status   => <<"error">>,
+     stage    => <<"stageout">>,
+     file_lst => FileLst };
+
 error_to_expr( _A, {run, Reason}, _UsrInfo ) ->
   Reason.
 
