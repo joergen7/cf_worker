@@ -172,8 +172,16 @@ do_stageout( A, F, CfWorkerState ) ->
   Dir = get_work_dir( A, CfWorkerState ),
   SrcFile = string:join( [Dir, binary_to_list( F )], "/" ),
 
-  % file:make_link( SrcFile, DestFile ).
-  file:copy( SrcFile, DestFile ).
+  case filelib:is_regular( SrcFile ) of
+
+    true ->
+      ok = filelib:ensure_dir( DestFile ),
+      ok = file:copy( SrcFile, DestFile );
+
+    false ->
+      {error, enoent}
+
+  end.
 
 
 
