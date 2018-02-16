@@ -178,19 +178,21 @@ do_stageout( A, F, CfWorkerState ) ->
 
 
 -spec error_to_expr( A, Reason, UsrInfo ) -> _
-when A       :: _,
-     Reason  :: {stagein | stageout, [_]} | {run, _},
+when A       :: #{ atom() => _ },
+     Reason  :: {stagein | stageout, [binary()]} | {run, _},
      UsrInfo :: _.
 
-error_to_expr( _A, {stagein, FileLst}, _UsrInfo ) ->
-  #{ status   => <<"error">>,
-     stage    => <<"stagein">>,
-     file_lst => FileLst };
+error_to_expr( #{ app_id := AppId }, {stagein, FileLst}, _UsrInfo ) ->
+  #{ app_id => AppId,
+     result => #{ status   => <<"error">>,
+                  stage    => <<"stagein">>,
+                  file_lst => FileLst } };
 
-error_to_expr( _A, {stageout, FileLst}, _UsrInfo ) ->
-  #{ status   => <<"error">>,
-     stage    => <<"stageout">>,
-     file_lst => FileLst };
+error_to_expr( #{ app_id := AppId }, {stageout, FileLst}, _UsrInfo ) ->
+  #{ app_id => AppId,
+     result => #{ status   => <<"error">>,
+                  stage    => <<"stageout">>,
+                  file_lst => FileLst } };
 
 error_to_expr( _A, {run, Reason}, _UsrInfo ) ->
   Reason.
