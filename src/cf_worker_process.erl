@@ -129,8 +129,8 @@ do_stagein( A, F, CfWorkerState ) ->
     throw:{stagein, SrcFile} ->
       Dir = get_work_dir( A, CfWorkerState ),
       DestFile = string:join( [Dir, F], "/" ),
-      {ok, _} = file:copy( SrcFile, DestFile )
-      % ok = file:make_symlink( SrcFile, DestFile )
+      {ok, _} = file:copy( SrcFile, DestFile ),
+      ok
   end.
 
 
@@ -176,7 +176,8 @@ do_stageout( A, F, CfWorkerState ) ->
 
     true ->
       ok = filelib:ensure_dir( DestFile ),
-      ok = file:copy( SrcFile, DestFile );
+      {ok, _} = file:copy( SrcFile, DestFile ),
+      ok;
 
     false ->
       {error, enoent}
