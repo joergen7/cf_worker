@@ -181,8 +181,29 @@ main( Args ) ->
             A                     -> throw( {error, {invalid_arg, A}} )
           end,
 
+        % extract working directory
+        M3 =
+          case lists:keyfind( wrk_dir, 1, OptLst ) of
+            false        -> M2;
+            {wrk_dir, W} -> M2#{ wrk_dir => W }
+          end,
+
+        % extract repository directory
+        M4 =
+          case lists:keyfind( repo_dir, 1, OptLst ) of
+            false         -> M3;
+            {repo_dir, R} -> M3#{ repo_dir => R }
+          end,
+
+        % extract data directory
+        M5 =
+          case lists:keyfind( data_dir, 1, OptLst ) of
+            false         -> M4;
+            {data_dir, D} -> M4#{ data_dir => D }
+          end,
+
         % set flag map
-        ok = application:set_env( ?MODULE, flag_map, M2 ),
+        ok = application:set_env( ?MODULE, flag_map, M5 ),
 
         % start worker application
         ok =
@@ -237,7 +258,10 @@ get_optspec_lst() ->
    {help,       $h, "help",       undefined, "Show command line options."},
    {suppl_file, $s, "suppl_file", binary,    "Supplementary configuration file."},
    {cre_node,   $c, "cre_node",   binary,    "Erlang node running the CRE application (must be specified)."},
-   {n_wrk,      $n, "n_wrk",      integer,   "Number of worker processes to start. 0 means auto-detect available processors."}
+   {n_wrk,      $n, "n_wrk",      integer,   "Number of worker processes to start. 0 means auto-detect available processors."},
+   {wrk_dir,    $w, "wrk_dir",    binary,    "Working directory in which workers store temporary files."},
+   {repo_dir,   $r, "repo_dir",   binary,    "Repository directory for intermediate and output data."},
+   {data_dir,   $d, "data_dir",   binary,    "Data directory where input data is located."}
   ].
 
 print_help() ->
