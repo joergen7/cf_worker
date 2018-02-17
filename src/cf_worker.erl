@@ -226,7 +226,7 @@ main( Args ) ->
         % wait indefinitely
         receive
           {'DOWN', MonitorRef, process, _Object, _Info} ->
-            ok = timer:sleep( 1000 )
+            ok
         end;
 
       {ok, {_, L}} ->
@@ -245,6 +245,8 @@ main( Args ) ->
     throw:{error, Reason} ->
       ok = io:format( "~n~p~n", [Reason] )
 
+  after
+    ok = timer:sleep( 1000 )
   end.
 
 
