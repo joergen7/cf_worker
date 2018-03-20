@@ -131,6 +131,7 @@ do_stagein( A, F, CfWorkerState ) ->
       DestFile = string:join( [Dir, binary_to_list( F )], "/" ),
 
       error_logger:info_report( [{info, "copy"}, {src_file, SrcFile}, {dest_file, DestFile}] ),
+      timer:sleep( 1000 ),
       {ok, _} = file:copy( SrcFile, DestFile ),
       ok
   end.
