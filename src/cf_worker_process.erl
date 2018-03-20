@@ -129,6 +129,8 @@ do_stagein( A, F, CfWorkerState ) ->
     throw:{stagein, SrcFile} ->
       Dir = get_work_dir( A, CfWorkerState ),
       DestFile = string:join( [Dir, binary_to_list( F )], "/" ),
+
+      error_logger:info_report( [{info, "copy"}, {src_file, SrcFile}, {dest_file, DestFile}] ),
       {ok, _} = file:copy( SrcFile, DestFile ),
       ok
   end.
