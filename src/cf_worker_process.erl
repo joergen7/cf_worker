@@ -128,10 +128,7 @@ do_stagein( A, F, CfWorkerState ) ->
   catch
     throw:{stagein, SrcFile} ->
       Dir = get_work_dir( A, CfWorkerState ),
-      DestFile = string:join( [Dir, binary_to_list( F )], "/" ),
-
-      error_logger:info_report( [{info, "copy"}, {src_file, SrcFile}, {dest_file, DestFile}] ),
-      timer:sleep( 1000 ),
+      DestFile = string:join( [Dir, filename:basename( binary_to_list( F ) )], "/" ),
       {ok, _} = file:copy( SrcFile, DestFile ),
       ok
   end.
@@ -169,7 +166,7 @@ do_stageout( A, F, CfWorkerState ) ->
   #{ app_id := AppId } = A,
   #cf_worker_state{ repo_dir = RepoDir } = CfWorkerState,
 
-  F1 = binary_to_list( update_value( F, AppId ) ),
+  F1 = binary_to_list( update_value( filename:basename( F ), AppId ) ),
   DestFile = string:join( [RepoDir, F1], "/" ),
 
   Dir = get_work_dir( A, CfWorkerState ),
