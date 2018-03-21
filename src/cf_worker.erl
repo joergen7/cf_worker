@@ -18,7 +18,7 @@
 %%
 %% -------------------------------------------------------------------
 %% @author Jörgen Brandt <joergen.brandt@onlinehome.de>
-%% @version 0.1.1
+%% @version 0.1.2
 %% @copyright 2015-2018 Jörgen Brandt
 %%
 %%
@@ -45,7 +45,7 @@
 %% Definitions
 %%====================================================================
 
--define( VSN, "0.1.1" ).
+-define( VSN, "0.1.2" ).
 
 %%====================================================================
 %% API functions
@@ -112,6 +112,7 @@ start( _StartType, _StartArgs ) ->
 
   error_logger:info_report( [{info, "starting Cuneiform worker pool"},
                              {application, cf_worker},
+                             {vsn,         ?VSN},
                              {node,        node()},
                              {n_wrk,       NWrk},
                              {cre_node,    CreNode},
