@@ -139,7 +139,16 @@ do_stagein( A, F, CfWorkerState ) ->
 run( A, CfWorkerState ) ->
 
   Dir = get_work_dir( A, CfWorkerState ),
-  Reply = effi:handle_request( A, Dir ),
+
+  #{ lambda       := Lambda,
+     arg_bind_lst := ArgBindLst } = A,
+
+  #{ arg_type_lst := ArgTypeLst } = Lambda,
+
+  ArgBindLst1 = update_arg_bind_lst( ArgTypeLst, ArgBindLst ),
+  A1 = A#{ arg_bind_lst := ArgBindLst1 },
+
+  Reply = effi:handle_request( A1, Dir ),
   
   case Reply of
     #{ result := #{ status := <<"ok">> } }    -> {ok, Reply};
@@ -319,6 +328,46 @@ get_stage_lst( TypeLst, BindLst ) ->
     end,
 
   lists:foldl( F, [], BindLst ).
+
+
+-spec update_arg_bind_lst( ArgTypeLst, ArgBindLst ) -> [#{ atom() => _ }]
+when ArgTypeLst :: [#{atom() => _ }],
+     ArgBindLst :: [#{atom() => _ }].
+
+update_arg_bind_lst( ArgTypeLst, ArgBindLst ) ->
+
+  F =
+    fun( ArgBinding ) ->
+
+      #{ arg_name := ArgName,
+         value    := Value } = ArgBinding,
+
+      TypeInfo = effi:get_type_info( ArgName, ArgTypeLst ),
+
+      #{ arg_type := ArgType,
+         is_list  := IsList } = TypeInfo,
+
+      case ArgType of
+
+        <<"File">> ->
+          case IsList of
+
+            false ->
+              ArgBinding#{ value := filename:basename( Value ) };
+
+            true ->
+              ArgBinding#{ value := [filename:basename( B ) || B <- Value] }
+
+          end;
+
+        _ ->
+          ArgBinding
+
+      end
+
+    end,
+
+  [F( Binding ) || Binding <- ArgBindLst].
 
 
 -spec update_ret_bind_lst( RetTypeLst, RetBindLst, AppId ) ->
