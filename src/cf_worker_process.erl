@@ -175,7 +175,7 @@ do_stageout( A, F, CfWorkerState ) ->
   #{ app_id := AppId } = A,
   #cf_worker_state{ repo_dir = RepoDir } = CfWorkerState,
 
-  F1 = binary_to_list( update_value( filename:basename( F ), AppId ) ),
+  F1 = binary_to_list( update_value( F, AppId ) ),
   DestFile = string:join( [RepoDir, F1], "/" ),
 
   Dir = get_work_dir( A, CfWorkerState ),
@@ -425,4 +425,5 @@ when is_binary( Value ),
 
   Skip = byte_size( AppId )-7,
   <<_:Skip/binary, B/binary>> = AppId,
-  <<B/binary, "_", Value/binary>>.
+  V = filename:basename( Value ),
+  <<B/binary, "_", V/binary>>.
