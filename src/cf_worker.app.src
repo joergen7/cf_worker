@@ -1,6 +1,6 @@
 {application, cf_worker,
  [{description, "A Cuneiform worker implementation."},
-  {vsn, "0.1.2"},
+  {vsn, "0.1.3"},
   {mod, {cf_worker, []}},
   {registered, []},
   {applications,
