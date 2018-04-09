@@ -46,7 +46,7 @@
 %% Record definitions
 %%====================================================================
 
--record( cf_worker_state, {wrk_dir, repo_dir, data_dir} ).
+-record( cf_worker_state, {wrk_dir, repo_dir, data_dir, table_ref} ).
 
 %%====================================================================
 %% API functions
@@ -72,14 +72,25 @@ when WrkDir  :: string(),
      DataDir :: string().
 
 init( {WrkDir, RepoDir, DataDir} ) ->
-  #cf_worker_state{ wrk_dir  = WrkDir,
-                    repo_dir = RepoDir,
-                    data_dir = DataDir }.
+
+  TableRef = ets:new( table, [bag] ),
+
+  #cf_worker_state{ wrk_dir   = WrkDir,
+                    repo_dir  = RepoDir,
+                    data_dir  = DataDir,
+                    table_ref = TableRef }.
 
 
 -spec prepare_case( A :: _, CfWorkerState :: _ ) -> ok.
 
 prepare_case( A, CfWorkerState ) ->
+
+  % record scheduling time
+  TStart = os:system_time(),
+  #{ app_id := AppId } = A,
+  ets:insert( {AppId, t_start, TStart} ),
+
+
   
   Dir = get_work_dir( A, CfWorkerState ),
   
@@ -106,8 +117,9 @@ stagein_lst( A, _CfWorkerState ) ->
 
 do_stagein( A, F, CfWorkerState ) ->
 
-  #cf_worker_state{ repo_dir = RepoDir,
-                    data_dir = DataDir } = CfWorkerState,
+  #cf_worker_state{ repo_dir  = RepoDir,
+                    data_dir  = DataDir,
+                    table_ref = TableRef } = CfWorkerState,
 
   try
 
@@ -127,9 +139,19 @@ do_stagein( A, F, CfWorkerState ) ->
 
   catch
     throw:{stagein, SrcFile} ->
+
+      % copy file from distributed file system
       Dir = get_work_dir( A, CfWorkerState ),
       DestFile = string:join( [Dir, filename:basename( binary_to_list( F ) )], "/" ),
-      {ok, _} = file:copy( SrcFile, DestFile ),
+      TStart = os:system_time(),
+      {ok, BytesCopied} = file:copy( SrcFile, DestFile ),
+      Duration = os:system_time()-TStart,
+
+      % log stats
+      #{ app_id := AppId } = A,
+      Tuple = {AppId, stage_in, {F, BytesCopied, TStart, Duration}},
+      true = ets:insert( TableRef, Tuple ),
+
       ok
   end.
 
@@ -173,7 +195,8 @@ stageout_lst( A, R, _CfWorkerState ) ->
 do_stageout( A, F, CfWorkerState ) ->
 
   #{ app_id := AppId } = A,
-  #cf_worker_state{ repo_dir = RepoDir } = CfWorkerState,
+  #cf_worker_state{ repo_dir  = RepoDir,
+                    table_ref = TableRef } = CfWorkerState,
 
   F1 = binary_to_list( update_value( F, AppId ) ),
   DestFile = string:join( [RepoDir, F1], "/" ),
@@ -184,8 +207,17 @@ do_stageout( A, F, CfWorkerState ) ->
   case filelib:is_regular( SrcFile ) of
 
     true ->
+
+      % copy file to distributed filesystem
+      TStart = os:system_time(),
       ok = filelib:ensure_dir( DestFile ),
-      {ok, _} = file:copy( SrcFile, DestFile ),
+      {ok, BytesCopied} = file:copy( SrcFile, DestFile ),
+      Duration = os:system_time()-TStart,
+
+      % log stats
+      Tuple = {AppId, stage_out, {F1, BytesCopied, TStart, Duration}},
+      true = ets:insert( TableRef, Tuple ),
+
       ok;
 
     false ->
@@ -230,21 +262,53 @@ cleanup_case( A, R, CfWorkerState ) ->
   #{ lambda := Lambda } = A,
   #{ ret_type_lst := RetTypeLst } = Lambda,
   #{ app_id := AppId,
+     stat   := Stat,
      result := Result } = R,
   #{ status := Status } = Result,
 
   % update return value
-  case Status of
+  R1 =
+    case Status of
 
-    <<"ok">> ->
-      #{ ret_bind_lst := RetBindLst } = Result,
-      RetBindLst1 = update_ret_bind_lst( RetTypeLst, RetBindLst, AppId ),
-      R#{ result => Result#{ ret_bind_lst => RetBindLst1 } };
+      <<"ok">> ->
+        #{ ret_bind_lst := RetBindLst } = Result,
+        RetBindLst1 = update_ret_bind_lst( RetTypeLst, RetBindLst, AppId ),
+        R#{ result => Result#{ ret_bind_lst => RetBindLst1 } };
 
-    _ ->
-      R
+      _ ->
+        R
 
-  end.
+    end,
+
+  % augment stats with file stats
+  #cf_worker_state{ table_ref = TableRef } = CfWorkerState,
+
+  StatLst = ets:lookup( TableRef, AppId ),
+  true = ets:delete( TableRef, AppId ),
+
+  StageInStat =
+    [#{ filename  => Filename,
+        size      => integer_to_binary( Size ),
+        t_start   => integer_to_binary( TStart ),
+        duration  => integer_to_binary( Duration ) }
+     || {_, stage_in, {Filename, Size, TStart, Duration}} <- StatLst],
+
+  StageOutStat =
+    [#{ filename  => Filename,
+        size      => integer_to_binary( Size ),
+        t_start   => integer_to_binary( TStart ),
+        duration  => integer_to_binary( Duration ) }
+     || {_, stage_out, {Filename, Size, TStart, Duration}} <- StatLst],
+
+  [TStart] = [TStart || {_, t_start, TStart} <- StatLst],
+  Duration = os:system_time()-TStart,
+
+  Stat1 = Stat#{ sched     => #{ t_start => TStart, duration => Duration },
+                 stage_out => StageOutStat,
+                 stage_in  => StageInStat },
+
+  R1#{ stat => Stat1 }.
+
 
 
 %%====================================================================
