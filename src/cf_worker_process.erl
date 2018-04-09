@@ -88,7 +88,8 @@ prepare_case( A, CfWorkerState ) ->
   % record scheduling time
   TStart = os:system_time(),
   #{ app_id := AppId } = A,
-  ets:insert( {AppId, t_start, TStart} ),
+  #cf_worker_state{ table_ref = TableRef } = CfWorkerState,
+  ets:insert( TableRef, {AppId, t_start, TStart} ),
 
 
   
