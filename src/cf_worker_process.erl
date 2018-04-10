@@ -304,7 +304,8 @@ cleanup_case( A, R, CfWorkerState ) ->
   [TStart] = [TStart || {_, t_start, TStart} <- StatLst],
   Duration = os:system_time()-TStart,
 
-  Stat1 = Stat#{ sched     => #{ t_start => TStart, duration => Duration },
+  Stat1 = Stat#{ sched     => #{ t_start  => integer_to_binary( TStart ),
+                                 duration => integer_to_binary( Duration ) },
                  stage_out => StageOutStat,
                  stage_in  => StageInStat },
 
