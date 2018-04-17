@@ -216,7 +216,7 @@ do_stageout( A, F, CfWorkerState ) ->
       Duration = os:system_time()-TStart,
 
       % log stats
-      Tuple = {AppId, stage_out, {F1, BytesCopied, TStart, Duration}},
+      Tuple = {AppId, stage_out, {list_to_binary( F1 ), BytesCopied, TStart, Duration}},
       true = ets:insert( TableRef, Tuple ),
 
       ok;
