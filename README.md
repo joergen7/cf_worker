@@ -13,16 +13,16 @@ Although the Cuneiform worker application can be imported also directly from Git
 
 #### rebar3
 
-To integrate the Cuneiform worker application into a rebar3-managed project change the `deps` entry in your application's `rebar.config` file to include the tuple `{cf_worker, "0.1.4"}`.
+To integrate the Cuneiform worker application into a rebar3-managed project change the `deps` entry in your application's `rebar.config` file to include the tuple `{cf_worker, "0.1.5"}`.
 
 ```erlang
-{deps, [{cf_worker, "0.1.4"}]}.
+{deps, [{cf_worker, "0.1.5"}]}.
 ```
 
 #### mix
 
 ```elixir
-{:cf_worker, "~> 0.1.4"}
+{:cf_worker, "~> 0.1.5"}
 
 ```
 ### Compiling

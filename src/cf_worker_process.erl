@@ -18,7 +18,7 @@
 %%
 %% -------------------------------------------------------------------
 %% @author Jörgen Brandt <joergen.brandt@onlinehome.de>
-%% @version 0.1.4
+%% @version 0.1.5
 %% @copyright 2015-2018 Jörgen Brandt
 %%
 %%
@@ -304,10 +304,10 @@ cleanup_case( A, R, CfWorkerState ) ->
   [TStart] = [TStart || {_, t_start, TStart} <- StatLst],
   Duration = os:system_time()-TStart,
 
-  Stat1 = Stat#{ sched     => #{ t_start  => integer_to_binary( TStart ),
-                                 duration => integer_to_binary( Duration ) },
-                 stage_out => StageOutStat,
-                 stage_in  => StageInStat },
+  Stat1 = Stat#{ sched         => #{ t_start  => integer_to_binary( TStart ),
+                                     duration => integer_to_binary( Duration ) },
+                 stage_out_lst => StageOutStat,
+                 stage_in_lst  => StageInStat },
 
   R1#{ stat => Stat1 }.
 
