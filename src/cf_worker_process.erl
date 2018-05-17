@@ -1,6 +1,6 @@
 %% -*- erlang -*-
 %%
-%% A Cuneiform worker implementation.
+%% cf_worker
 %%
 %% Copyright 2015-2018 Jörgen Brandt
 %%
@@ -18,7 +18,7 @@
 %%
 %% -------------------------------------------------------------------
 %% @author Jörgen Brandt <joergen.brandt@onlinehome.de>
-%% @version 0.1.5
+%% @version 0.1.6
 %% @copyright 2015-2018 Jörgen Brandt
 %%
 %%
@@ -263,53 +263,58 @@ cleanup_case( A, R, CfWorkerState ) ->
   #{ lambda := Lambda } = A,
   #{ ret_type_lst := RetTypeLst } = Lambda,
   #{ app_id := AppId,
-     stat   := Stat,
      result := Result } = R,
   #{ status := Status } = Result,
+
+  #cf_worker_state{ table_ref = TableRef } = CfWorkerState,
 
   % update return value
   R1 =
     case Status of
 
       <<"ok">> ->
+
+        % augment stats with file stats
+        #{ stat := Stat } = Result,
+
+        StatLst = ets:lookup( TableRef, AppId ),
+
+        StageInStat =
+          [#{ filename  => Filename,
+              size      => integer_to_binary( Size ),
+              t_start   => integer_to_binary( TStart ),
+              duration  => integer_to_binary( Duration ) }
+           || {_, stage_in, {Filename, Size, TStart, Duration}} <- StatLst],
+
+        StageOutStat =
+          [#{ filename  => Filename,
+              size      => integer_to_binary( Size ),
+              t_start   => integer_to_binary( TStart ),
+              duration  => integer_to_binary( Duration ) }
+           || {_, stage_out, {Filename, Size, TStart, Duration}} <- StatLst],
+
+        [TStart] = [TStart || {_, t_start, TStart} <- StatLst],
+        Duration = os:system_time()-TStart,
+
+        Stat1 = Stat#{ sched         => #{ t_start  => integer_to_binary( TStart ),
+                                           duration => integer_to_binary( Duration ) },
+                       stage_out_lst => StageOutStat,
+                       stage_in_lst  => StageInStat },
+
+
+
         #{ ret_bind_lst := RetBindLst } = Result,
         RetBindLst1 = update_ret_bind_lst( RetTypeLst, RetBindLst, AppId ),
-        R#{ result => Result#{ ret_bind_lst => RetBindLst1 } };
+        R#{ result => Result#{ stat => Stat1, ret_bind_lst => RetBindLst1 } };
 
       _ ->
         R
 
     end,
 
-  % augment stats with file stats
-  #cf_worker_state{ table_ref = TableRef } = CfWorkerState,
-
-  StatLst = ets:lookup( TableRef, AppId ),
   true = ets:delete( TableRef, AppId ),
 
-  StageInStat =
-    [#{ filename  => Filename,
-        size      => integer_to_binary( Size ),
-        t_start   => integer_to_binary( TStart ),
-        duration  => integer_to_binary( Duration ) }
-     || {_, stage_in, {Filename, Size, TStart, Duration}} <- StatLst],
-
-  StageOutStat =
-    [#{ filename  => Filename,
-        size      => integer_to_binary( Size ),
-        t_start   => integer_to_binary( TStart ),
-        duration  => integer_to_binary( Duration ) }
-     || {_, stage_out, {Filename, Size, TStart, Duration}} <- StatLst],
-
-  [TStart] = [TStart || {_, t_start, TStart} <- StatLst],
-  Duration = os:system_time()-TStart,
-
-  Stat1 = Stat#{ sched         => #{ t_start  => integer_to_binary( TStart ),
-                                     duration => integer_to_binary( Duration ) },
-                 stage_out_lst => StageOutStat,
-                 stage_in_lst  => StageInStat },
-
-  R1#{ stat => Stat1 }.
+  R1.
 
 
 
