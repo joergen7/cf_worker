@@ -3,11 +3,11 @@
 
 [![hex.pm](https://img.shields.io/hexpm/v/cf_worker.svg?style=flat-square)](https://hex.pm/packages/cf_worker) [![Build Status](https://travis-ci.org/joergen7/cf_worker.svg?branch=master)](https://travis-ci.org/joergen7/cf_worker)
 
-cf_worker is a worker implementation for the common runtime environment (CRE). The worker uses the Erlang foreign function interface (Effi) to execute tasks and interacts with the (distributed) filesystem via a Posix interface.
+The Cuneiform worker is a worker implementation for the common runtime environment (CRE). The worker uses the Erlang foreign function interface (Effi) to execute tasks and interacts with the (distributed) filesystem via a Posix interface.
 
-## Usage
+## Integration and Build
 
-### Adding the Cuneiform worker to a Project
+### Adding the Worker to a Project
 
 Although the Cuneiform worker application can be imported also directly from GitHub, we recommend adding a dependency via [hex.pm](https://hex.pm). Here, we show how this can be done using the build tools [rebar3](https://www.rebar3.org) or mix.
 
@@ -20,6 +20,8 @@ To integrate the Cuneiform worker application into a rebar3-managed project chan
 ```
 
 #### mix
+
+To integrate effi into a mix-managed project include the following
 
 ```elixir
 {:cf_worker, "~> 0.1.6"}
@@ -35,11 +37,8 @@ If you want to drive the project from the command line please compile the projec
 
     rebar3 escriptize
 
-### Starting the Cuneiform Worker
 
-The Cuneiform worker application can be started in several different ways. It can be started from the command line, as an Erlang application, as a supervision tree hosting workers under a single supervisor, or directly as a process. In all cases there has to be a way for the workers to find the CRE instance and connect to it.
-
-#### Starting from the Command Line
+## Command Line Synopsis
 
 Compiling the Cuneiform client using `escriptize` creates an Erlang script file `cf_worker` which allows starting the Cuneiform client via the command line.
 
@@ -71,7 +70,7 @@ To start the worker application from the command line and connect with a running
 
 Here, we assume that the CRE runs on an Erlang node identified as `cre@my_node`.
 
-#### Starting as an Erlang Application
+## Erlang API
 
 If a CRE instance is already running on the same Erlang node you can start the Cuneiform worker application by calling
 
@@ -85,7 +84,7 @@ Which is exactly the same as calling
 application:start( cf_worker ).
 ```
 
-#### Starting Under the Default Supervisor
+### Starting Under the Default Supervisor
 
 To start the Cuneiform worker default supervisor under a custom supervision tree enter
 
@@ -101,7 +100,7 @@ cf_client_sup:start_link( CreNode, NWrk, WrkDir, RepoDir, DataDir ).
 
 This starts a worker supervisor with four workers using `WrkDir` to store temporal data, `RepoDir` for intermediate and output data, and `DataDir` to look up input data. Also, we expect a CRE to be running on the same node.
 
-#### Starting Directly
+### Starting Directly
 
 The Cuneiform client process can be started directly. There are several ways to do this. The first is to start the process with a function that allows it to locate the CRE:
 
