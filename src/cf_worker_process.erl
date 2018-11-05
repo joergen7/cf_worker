@@ -41,6 +41,8 @@
 
 -export( [start_link/4] ).
 
+-export( [copy/2] ).
+
 
 %%====================================================================
 %% Record definitions
@@ -145,7 +147,7 @@ do_stagein( A, F, CfWorkerState ) ->
       Dir = get_work_dir( A, CfWorkerState ),
       DestFile = string:join( [Dir, filename:basename( binary_to_list( F ) )], "/" ),
       TStart = os:system_time(),
-      {ok, BytesCopied} = file:copy( SrcFile, DestFile ),
+      {ok, BytesCopied} = copy( SrcFile, DestFile ),
       Duration = os:system_time()-TStart,
 
       % log stats
@@ -212,7 +214,7 @@ do_stageout( A, F, CfWorkerState ) ->
       % copy file to distributed filesystem
       TStart = os:system_time(),
       ok = filelib:ensure_dir( DestFile ),
-      {ok, BytesCopied} = file:copy( SrcFile, DestFile ),
+      {ok, BytesCopied} = copy( SrcFile, DestFile ),
       Duration = os:system_time()-TStart,
 
       % log stats
@@ -498,3 +500,31 @@ when is_binary( Value ),
   <<_:Skip/binary, B/binary>> = AppId,
   V = filename:basename( Value ),
   <<B/binary, "_", V/binary>>.
+
+
+-spec copy( SrcFile, DestFile ) -> {ok, non_neg_integer()}
+                                 | {error, string()}
+when SrcFile  :: string(),
+     DestFile :: string().
+
+copy( SrcFile, DestFile )
+when is_list( SrcFile ),
+     is_list( DestFile ) ->
+
+  Cmd =
+    io_lib:format(
+      "cp -l ~p ~p 2> /dev/null || cp ~p ~p",
+      [SrcFile, DestFile, SrcFile, DestFile] ),
+
+  Output =
+    os:cmd( Cmd ),
+
+  case Output of
+    "" ->
+      S1 = os:cmd( io_lib:format( "du -b ~p", [SrcFile] ) ),
+      [S2, _] = string:split( S1, "\t" ),
+      Size = list_to_integer( S2 ),
+      {ok, Size};
+    ErrorMsg ->
+      {error, ErrorMsg}
+  end.
