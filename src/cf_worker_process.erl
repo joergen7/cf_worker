@@ -236,12 +236,14 @@ when A       :: #{ atom() => _ },
 error_to_expr( #{ app_id := AppId }, {stagein, FileLst}, _UsrInfo ) ->
   #{ app_id => AppId,
      result => #{ status   => <<"error">>,
+                  node     => atom_to_binary( node(), utf8 ),
                   stage    => <<"stagein">>,
                   file_lst => FileLst } };
 
 error_to_expr( #{ app_id := AppId }, {stageout, FileLst}, _UsrInfo ) ->
   #{ app_id => AppId,
      result => #{ status   => <<"error">>,
+                  node     => atom_to_binary( node(), utf8 ),
                   stage    => <<"stageout">>,
                   file_lst => FileLst } };
 
