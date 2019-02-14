@@ -1,5 +1,5 @@
 # cf_worker
-###### A Cuneiform worker implementation.
+###### Cuneiform worker implementation
 
 [![hex.pm](https://img.shields.io/hexpm/v/cf_worker.svg?style=flat-square)](https://hex.pm/packages/cf_worker) [![Build Status](https://travis-ci.org/joergen7/cf_worker.svg?branch=master)](https://travis-ci.org/joergen7/cf_worker)
 
@@ -13,10 +13,10 @@ Although the Cuneiform worker application can be imported also directly from Git
 
 #### rebar3
 
-To integrate the Cuneiform worker application into a rebar3-managed project change the `deps` entry in your application's `rebar.config` file to include the tuple `{cf_worker, "0.1.6"}`.
+To integrate the Cuneiform worker application into a rebar3-managed project change the `deps` entry in your application's `rebar.config` file to include the tuple `{cf_worker, "0.1.7"}`.
 
 ```erlang
-{deps, [{cf_worker, "0.1.6"}]}.
+{deps, [{cf_worker, "0.1.7"}]}.
 ```
 
 #### mix
@@ -24,7 +24,7 @@ To integrate the Cuneiform worker application into a rebar3-managed project chan
 To integrate effi into a mix-managed project include the following
 
 ```elixir
-{:cf_worker, "~> 0.1.6"}
+{:cf_worker, "~> 0.1.7"}
 
 ```
 ### Compiling
