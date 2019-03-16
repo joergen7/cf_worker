@@ -360,7 +360,11 @@ when is_list( Dir )->
 
     {ok, FileLst} ->
       ok = lists:foreach( F, FileLst ),
-      ok = file:del_dir( Dir );
+      case file:del_dir( Dir ) of
+        ok -> ok;
+        {error, enotdir} ->
+          ok = file:delete( Dir )
+      end;
 
     {error, Reason} ->
       {error, Reason}
