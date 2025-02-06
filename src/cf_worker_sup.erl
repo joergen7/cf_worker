@@ -27,74 +27,75 @@
 %% @end
 %% -------------------------------------------------------------------
 
--module( cf_worker_sup ).
--behaviour( supervisor ).
-
+-module(cf_worker_sup).
+-behaviour(supervisor).
 
 %%====================================================================
 %% Exports
 %%====================================================================
 
--export( [init/1] ).
--export( [start_link/5] ).
-
+-export([init/1]).
+-export([start_link/5]).
 
 %%====================================================================
 %% API functions
 %%====================================================================
 
-start_link( CreNode, NWrk, WrkDir, RepoDir, DataDir ) ->
 
-  supervisor:start_link( {local, cf_worker_sup},
-                         ?MODULE,
-                         {CreNode, NWrk, WrkDir, RepoDir, DataDir} ).
+start_link(CreNode, NWrk, WrkDir, RepoDir, DataDir) ->
+
+    supervisor:start_link({local, cf_worker_sup},
+                          ?MODULE,
+                          {CreNode, NWrk, WrkDir, RepoDir, DataDir}).
+
 
 %%====================================================================
 %% Supervisor callback functions
 %%====================================================================
 
-init( {CreNode, NWrk, WrkDir, RepoDir, DataDir} )
-when is_atom( CreNode ),
-     is_integer( NWrk ), NWrk > 0,
-     is_list( WrkDir ),
-     is_list( RepoDir ),
-     is_list( DataDir ) ->
 
-  F =
-    fun() ->    
-      cre:pid( CreNode )
-    end,
+init({CreNode, NWrk, WrkDir, RepoDir, DataDir})
+  when is_atom(CreNode),
+       is_integer(NWrk),
+       NWrk > 0,
+       is_list(WrkDir),
+       is_list(RepoDir),
+       is_list(DataDir) ->
 
-  Id =
-    fun( I ) ->
-      S = lists:flatten( io_lib:format( "wrk-~p", [I] ) ),
-      list_to_atom( S )
-    end,
+    F =
+        fun() ->
+                cre:pid(CreNode)
+        end,
 
-  % connect with CRE
-  pong =
-    case CreNode of
-      'nonode@nohost' -> pong;
-      _               -> net_adm:ping( CreNode )
-    end,
+    Id =
+        fun(I) ->
+                S = lists:flatten(io_lib:format("wrk-~p", [I])),
+                list_to_atom(S)
+        end,
 
-  SupFlags = #{
-               strategy  => one_for_one,
-               intensity => 0,
-               period    => 5
-              },
+    % connect with CRE
+    pong =
+        case CreNode of
+            'nonode@nohost' -> pong;
+            _ -> net_adm:ping(CreNode)
+        end,
 
-  WorkerNodeSpec = #{
-                     start    => {cf_worker_process,
-                                  start_link,
-                                  [F, WrkDir, RepoDir, DataDir]},
-                     restart  => permanent,
-                     shutdown => 5000,
-                     type     => worker,
-                     modules  => [cf_worker_process]
-                    },
+    SupFlags = #{
+                 strategy => one_for_one,
+                 intensity => 0,
+                 period => 5
+                },
 
-  SpecLst = [WorkerNodeSpec#{ id => Id( I ) } || I <- lists:seq( 1, NWrk )],
+    WorkerNodeSpec = #{
+                       start => {cf_worker_process,
+                                 start_link,
+                                 [F, WrkDir, RepoDir, DataDir]},
+                       restart => permanent,
+                       shutdown => 5000,
+                       type => worker,
+                       modules => [cf_worker_process]
+                      },
 
-  {ok, {SupFlags, SpecLst}}.
+    SpecLst = [ WorkerNodeSpec#{id => Id(I)} || I <- lists:seq(1, NWrk) ],
 
+    {ok, {SupFlags, SpecLst}}.

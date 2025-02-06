@@ -1,7 +1,7 @@
 # cf_worker
 ###### Cuneiform worker implementation
 
-[![hex.pm](https://img.shields.io/hexpm/v/cf_worker.svg?style=flat-square)](https://hex.pm/packages/cf_worker) [![Build Status](https://travis-ci.org/joergen7/cf_worker.svg?branch=master)](https://travis-ci.org/joergen7/cf_worker)
+[![hex.pm](https://img.shields.io/hexpm/v/cf_worker.svg?style=flat-square)](https://hex.pm/packages/cf_worker)
 
 The Cuneiform worker is a worker implementation for the common runtime environment (CRE). The worker uses the Erlang foreign function interface (Effi) to execute tasks and interacts with the (distributed) filesystem via a Posix interface.
 

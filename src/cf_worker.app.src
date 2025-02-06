@@ -5,22 +5,18 @@
   {registered, []},
   {applications,
    [kernel,
-    stdlib
-   ]},
-  {env,[
-        {default_map, #{ n_wrk    => <<"auto">>,
+    stdlib]},
+  {env, [{default_map, #{
+                         n_wrk => <<"auto">>,
                          cre_node => <<"node">>,
-                         wrk_dir  => <<"./_cuneiform/wrk">>,
+                         wrk_dir => <<"./_cuneiform/wrk">>,
                          repo_dir => <<"./_cuneiform/repo">>,
-                         data_dir => <<".">> }},
-        {global_file, "/usr/local/etc/cuneiform/cf_worker.json"},
-        {user_file,   ".config/cuneiform/cf_worker.json"}
-       ]},
+                         data_dir => <<".">>
+                        }},
+         {global_file, "/usr/local/etc/cuneiform/cf_worker.json"},
+         {user_file, ".config/cuneiform/cf_worker.json"}]},
   {modules, [cf_worker, cf_worker_process, cf_worker_sup]},
 
   {maintainers, ["Jorgen Brandt"]},
   {licenses, ["Apache 2.0"]},
-  {links, [
-           {"GitHub", "https://github.com/joergen7/cf_worker/"}
-          ]}
- ]}.
+  {links, [{"GitHub", "https://github.com/joergen7/cf_worker/"}]}]}.
