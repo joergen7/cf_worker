@@ -46,6 +46,16 @@
 
 -export([start_link/4]).
 
+-type result() :: #{
+                    node := binary(),
+                    status := nonempty_binary(),
+                    extended_script => <<_:48, _:_*8>>,
+                    output => _,
+                    ret_bind_lst => _,
+                    stage => <<_:24>>,
+                    stat => map()
+                   }.
+
 %%====================================================================
 %% Record definitions
 %%====================================================================
@@ -89,7 +99,13 @@ init({WrkDir, RepoDir, DataDir}) ->
      }.
 
 
--spec prepare_case(A :: _, CfWorkerState :: _) -> ok.
+-spec prepare_case(A, CfWorkerState) -> Result
+              when A :: #{
+                          app_id := binary(),
+                          atom() => _
+                         },
+                   CfWorkerState :: #cf_worker_state{wrk_dir :: string(), table_ref :: atom() | ets:tid()},
+                   Result :: ok.
 
 prepare_case(A, CfWorkerState) ->
 
@@ -110,7 +126,17 @@ prepare_case(A, CfWorkerState) ->
     ok = filelib:ensure_dir(Dir ++ "/").
 
 
--spec stagein_lst(A :: _, UsrInfo :: _) -> [F :: _].
+-spec stagein_lst(A, UsrInfo) -> Result
+              when A :: #{
+                          arg_bind_lst := [#{atom() => _}],
+                          lambda := #{
+                                      arg_type_lst := [map()],
+                                      _ => _
+                                     },
+                          _ => _
+                         },
+                   UsrInfo :: _,
+                   Result :: [F :: string()].
 
 stagein_lst(A, _CfWorkerState) ->
 
@@ -120,7 +146,11 @@ stagein_lst(A, _CfWorkerState) ->
     get_stage_lst(ArgTypeLst, ArgBindLst).
 
 
--spec do_stagein(A :: _, F :: _, UsrInfo :: _) -> ok | {error, enoent}.
+-spec do_stagein(A, F, UsrInfo) -> Result
+              when A :: _,
+                   F :: binary(),
+                   UsrInfo :: #cf_worker_state{},
+                   Result :: ok | {error, enoent}.
 
 do_stagein(A, F, CfWorkerState) ->
 
@@ -165,7 +195,17 @@ do_stagein(A, F, CfWorkerState) ->
     end.
 
 
--spec run(A :: _, UsrInfo :: _) -> {ok, R :: _} | {error, Reason :: _}.
+-spec run(A, UsrInfo) -> Result
+              when A :: #{'app_id' := binary(), 'arg_bind_lst' := [#{atom() => _}], 'lambda' := #{'arg_type_lst' := [map()], _ => _}, atom() => _},
+                   UsrInfo :: #cf_worker_state{wrk_dir :: string()},
+                   Result :: {error, #{
+                                       app_id := binary(),
+                                       result := result()
+                                      }} |
+                             {ok, #{
+                                    app_id := binary(),
+                                    result := result()
+                                   }}.
 
 run(A, CfWorkerState) ->
 
@@ -189,7 +229,11 @@ run(A, CfWorkerState) ->
     end.
 
 
--spec stageout_lst(A :: _, R :: _, UsrInfo :: _) -> [F :: _].
+-spec stageout_lst(A, R, UsrInfo) -> Result
+              when A :: #{'lambda' := #{'ret_type_lst' := [map()], _ => _}, _ => _},
+                   R :: #{'result' := #{'ret_bind_lst' := [map()], _ => _}, _ => _},
+                   UsrInfo :: _,
+                   Result :: [F :: string()].
 
 stageout_lst(A, R, _CfWorkerState) ->
 
@@ -201,7 +245,11 @@ stageout_lst(A, R, _CfWorkerState) ->
     get_stage_lst(RetTypeLst, RetBindLst).
 
 
--spec do_stageout(A :: _, F :: _, UsrInfo :: _) -> ok | {error, enoent}.
+-spec do_stageout(A, F, UsrInfo) -> Result
+              when A :: #{'app_id' := binary(), atom() => _},
+                   F :: binary(),
+                   UsrInfo :: #cf_worker_state{wrk_dir :: string(), repo_dir :: string()},
+                   Result :: ok | {error, enoent}.
 
 do_stageout(A, F, CfWorkerState) ->
 
@@ -362,7 +410,7 @@ get_work_dir(#{app_id := AppId}, #cf_worker_state{wrk_dir = WorkDir})
     string:join([WorkDir, binary_to_list(AppId)], "/").
 
 
--spec delete_dir(Dir :: string()) -> ok | {error, _}.
+-spec delete_dir(Dir :: string()) -> ok | {error, atom() | {no_translation, binary()}}.
 
 delete_dir(Dir)
   when is_list(Dir) ->
@@ -531,7 +579,7 @@ update_ret_bind_lst(RetTypeLst, RetBindLst, AppId)
     [ F(Binding) || Binding <- RetBindLst ].
 
 
--spec update_value(Value, AppId) -> binary()
+-spec update_value(Value, AppId) -> nonempty_binary()
               when Value :: binary(),
                    AppId :: binary().
 
