@@ -48,7 +48,7 @@
 
 -type result() :: #{
                     node := binary(),
-                    status := <<_:40>> | <<_:16>>,
+                    status := <<_:16, _:_*8>>,
                     extended_script => <<_:48, _:_*8>>,
                     output => _,
                     ret_bind_lst => _,
